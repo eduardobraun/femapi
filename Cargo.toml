@@ -1,0 +1,6 @@
+[package]
+name = "femapi"
+version = "0.1.0"
+authors = ["EDUARDO BRAUN <eduardo@rushers.org>"]
+
+[dependencies]
