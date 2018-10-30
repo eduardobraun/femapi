@@ -12,13 +12,10 @@ extern crate serde_json;
 
 extern crate bcrypt;
 
-use std::path::{Path, PathBuf};
-
-use juniper::EmptyMutation;
 use rocket::fairing::{AdHoc, Fairing, Info, Kind};
 use rocket::http::{ContentType, Header, Method};
 use rocket::{Request, Response, Rocket};
-use rocket_cors::{AllowedHeaders, AllowedOrigins, Guard, Responder};
+use rocket_cors::{AllowedHeaders, AllowedOrigins};
 use std::io::Cursor;
 
 mod db;

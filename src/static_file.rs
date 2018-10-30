@@ -6,9 +6,6 @@ use std::path::{Path, PathBuf};
 
 #[get("/<file..>", rank = 10)]
 pub fn files(file: PathBuf) -> Option<NamedFile> {
-    // const WEB_DIRECTORY: &str = "../frontend/app/static";
-    // info!("Getting file: {}", file.to_str().unwrap());
-
     match NamedFile::open(Path::new(&static_dir()).join(file.clone())) {
         Ok(file) => Some(file),
         Err(_) => {
@@ -24,9 +21,8 @@ pub fn files(file: PathBuf) -> Option<NamedFile> {
 
 #[get("/", rank = 10)]
 pub fn index() -> NamedFile {
-    // info!("Getting index.html");
-    let INDEX_FILE = Path::new("index.html");
-    NamedFile::open(Path::new(&static_dir()).join(INDEX_FILE)).unwrap()
+    let index_file = Path::new("index.html");
+    NamedFile::open(Path::new(&static_dir()).join(index_file)).unwrap()
 }
 
 pub fn routes() -> Vec<Route> {

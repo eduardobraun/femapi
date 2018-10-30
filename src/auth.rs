@@ -7,7 +7,7 @@ use rocket_contrib::Json;
 use serde_derive::{Deserialize, Serialize};
 
 use bcrypt::{hash, verify, DEFAULT_COST};
-use frank_jwt::{decode, encode, Algorithm};
+use frank_jwt::{encode, Algorithm};
 
 use super::db::models::*;
 use super::db::DbConn;
@@ -56,40 +56,39 @@ fn login(
 
     let user = results.get(0).expect("Failed to get User");
     let valid = verify(&login_info.password, &user.password).expect("Failed to verify hash");
+
     if !valid {
         return Err(Failure(Status::Unauthorized));
     }
-    // TODO: Create token
+
     let payload = json!({
         "user_id": user.id,
         "user_email": user.email,
         "user_name": user.name,
     });
+
     let header = json!({});
     let token = encode(header, &secret.inner().0, &payload, Algorithm::HS256)
         .expect("Failed to encode token");
-    // TODO: Cache token
-
-    // let token_response = format!{"{{'token': {}}}", token}.to_string();
     let token_response = TokenResponse { token: token };
+
     Ok(Json(token_response))
 }
 
 #[post("/create_user", data = "<new_user_request>")]
 fn new_user(
     new_user_request: Json<NewUserRequest>,
-    secret: State<Secret>,
     conn: DbConn,
 ) -> Result<Json<&'static str>, Status> {
     use super::db::schema::users::dsl::*;
 
     let hashed = hash(&new_user_request.password, DEFAULT_COST).expect("Error hashing password");
-
     let new_user = NewUser {
         name: &new_user_request.name.clone(),
         email: &new_user_request.email.clone(),
         password: &hashed.clone(),
     };
+
     diesel::insert_into(users)
         .values(new_user)
         .execute(&*conn)
@@ -98,12 +97,8 @@ fn new_user(
     Ok(Json("{'message': 'User added.'}"))
 }
 
-/// Given just a JWT from the header, verify the JWT,
-/// and produce another JWT with an expiry time farther out in the future.
 #[get("/renew")]
-// fn renew(jwt: ServerJwt, secret: State<Secret>) -> Result<Json<&'static str>, Status> {
 fn renew(secret: State<Secret>) -> Result<Json<&'static str>, Status> {
-    // auth_db::reauth(jwt, &secret)
     println!{"The secret is: {:?}", secret};
     Ok(Json("{'token': 'token'}"))
 }

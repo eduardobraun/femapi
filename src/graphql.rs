@@ -1,10 +1,9 @@
 use rocket::Route;
 
 use super::db::Pool;
-// use super::model::Database;
-use juniper::{EmptyMutation, RootNode};
+use juniper::RootNode;
 use rocket::response::content;
-use rocket::{Response, State};
+use rocket::State;
 
 use super::schema::{Database, MutationRoot, QueryRoot};
 
@@ -59,15 +58,6 @@ fn post_graphql_handler(
     request.execute(&schema, &context)
 }
 
-#[route(OPTIONS, "/graphql")]
-fn options_graphql_handler<'a>() -> Response<'a> {
-    Response::build().finalize()
-}
-
 pub fn routes() -> Vec<Route> {
-    routes![
-        graphiql,
-        get_graphql_handler,
-        post_graphql_handler // options_graphql_handler
-    ]
+    routes![graphiql, get_graphql_handler, post_graphql_handler]
 }

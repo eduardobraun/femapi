@@ -1,10 +1,9 @@
-// use super::model::{Database, File, FileViewType, Member, Permission, Project, User};
 use super::db::models::{Member, NewMember, NewProject, Project, User};
 use super::db::DbConn;
 use super::db::Pool;
 use super::diesel::prelude::*;
 
-use juniper::{Context, FieldResult};
+use juniper::Context;
 
 pub struct Database {
     pub current_user: Option<User>,
@@ -19,12 +18,6 @@ pub enum Permission {
     Write,
     Owner,
 }
-
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// pub struct UserProject<'a> {
-//     pub project_id: Project,
-//     pub permission: Permission,
-// }
 
 graphql_object!(User: Database |&self| {
     description: "A todo item that that can be marked as completed"
