@@ -3,9 +3,6 @@ image: docker:latest
 services:
   - docker:dind
 
-before_script:
-  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-
 test:cargo:
   image: "rustlang/rust:nightly"
   script:
@@ -22,6 +19,7 @@ build-master:
 
   stage: build
   script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker build --pull -t "$CI_REGISTRY_IMAGE" .
     - docker push "$CI_REGISTRY_IMAGE"
   only:
