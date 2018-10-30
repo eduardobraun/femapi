@@ -1,24 +1,24 @@
+image: docker:latest
+
+services:
+  - docker:dind
+
+before_script:
+  - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+
 test:cargo:
   image: "rustlang/rust:nightly"
-  before_script:
+  script:
     - apt-get update -yqq
     - apt-get install -yqq --no-install-recommends build-essential
     - apt-get -y install ca-certificates libssl-dev
-
-    script:
-      - rustc --version && cargo --version
-      - cargo test --all --verbose
+    - rustc --version && cargo --version
+    - cargo test --all --verbose
 
 build-master:
-  image: docker:latest
-
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
 
-  services:
-    - docker:dind
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
 
   stage: build
   script:
