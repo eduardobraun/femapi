@@ -3,5 +3,5 @@
 extern crate femapi;
 
 fn main() {
-    sharefem::init_rocket().launch();
+    femapi::init_rocket().launch();
 }
