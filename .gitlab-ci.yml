@@ -40,11 +40,15 @@ deploy_staging:
     - mkdir ~/femapi
     - mkdir ~/femapi/config
     - mkdir ~/femapi/data
-    - echo "$STAGING_DOTENV" | tr -d '\r'> ~/femapi/config/.env
+    #- echo "$STAGING_DOTENV" | tr -d '\r'> ~/femapi/config/.env
+    - export secret=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+    - touch ~/femapi/config/env
+    - echo "DATABASE_URL = sharefem.db" >> ~/femapi/config/env
+    - echo "STATIC_DIR = /www" >> ~/femapi/config/env
+    - echo "SECRET = $secret" >> ~/femapi/config/env
     - cp ./Rocket.toml ~/femapi/config
     - cp ./diesel.toml ~/femapi/config
     - diesel setup
-    - disesel migration run
     - cp ./sharefem.db ~/femapi/data
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" rm -rf ~/femapi
     - scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/femapi "$STAGING_USER"@"$STAGING_ADDR":~
