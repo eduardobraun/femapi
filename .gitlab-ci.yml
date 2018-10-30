@@ -1,22 +1,47 @@
-image: "rustlang/rust:nightly"
-
-# Optional: Pick zero or more services to be used on all builds.
-# Only needed when using a docker container to run your tests in.
-# Check out: http://docs.gitlab.com/ce/ci/docker/using_docker_images.html#what-is-a-service
-#services:
-#  - mysql:latest
-#  - redis:latest
-#  - postgres:latest
-
-# Optional: Install a C compiler, cmake and git into the container.
-# You will often need this when you (or any of your dependencies) depends on C code.
-before_script:
-  - apt-get update -yqq
-  - apt-get install -yqq --no-install-recommends build-essential
-  - apt-get -y install ca-certificates libssl-dev
-
-# Use cargo to test the project
 test:cargo:
+  image: "rustlang/rust:nightly"
+  before_script:
+    - apt-get update -yqq
+    - apt-get install -yqq --no-install-recommends build-essential
+    - apt-get -y install ca-certificates libssl-dev
+
+    script:
+      - rustc --version && cargo --version
+      - cargo test --all --verbose
+
+build-master:
+  image: docker:latest
+
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+
+  stage: build
   script:
-  - rustc --version && cargo --version      # Print version info for debugging
-  - cargo test --all --verbose
+    - docker build --pull -t "$CI_REGISTRY_IMAGE" .
+    - docker push "$CI_REGISTRY_IMAGE"
+  only:
+    - master
+
+deploy_staging:
+  image: ubuntu:latest
+  stage: deploy
+  script:
+    - ( apt-get update -y && apt-get install make ca-certificates openssl python wget openssh-client -y )
+    - update-ca-certificates
+
+    - eval $(ssh-agent -s)
+    - echo "$STAGING_SERVICE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $STAGING_USER @ $STAGING_ADDR docker pull "$CI_REGISTRY_IMAGE"
+  environment:
+    name: staging
+    url: https://staging.example.com
+  only:
+  - master
