@@ -8,14 +8,7 @@ use std::path::{Path, PathBuf};
 pub fn files(file: PathBuf) -> Option<NamedFile> {
     match NamedFile::open(Path::new(&static_dir()).join(file.clone())) {
         Ok(file) => Some(file),
-        Err(_) => {
-            // if file.starts_with("api") {
-            //     None
-            // } else {
-            // info!("Could not find file, returning index");
-            Some(index())
-            // }
-        }
+        Err(_) => Some(index()),
     }
 }
 

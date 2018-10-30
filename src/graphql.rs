@@ -12,6 +12,8 @@ use super::db::DbConn;
 use super::db::models::User;
 use diesel::*;
 
+use super::auth::AuthInfo;
+
 pub type Schema = RootNode<'static, QueryRoot, MutationRoot>;
 
 #[get("/gql")]
@@ -24,10 +26,11 @@ fn get_graphql_handler(
     pool: State<Pool>,
     request: juniper_rocket::GraphQLRequest,
     schema: State<Schema>,
+    auth_info: AuthInfo,
 ) -> juniper_rocket::GraphQLResponse {
     use super::db::schema::users::dsl;
     let conn = DbConn(pool.clone().get().unwrap());
-    let user = match dsl::users.order(dsl::id).first::<User>(&*conn) {
+    let user = match dsl::users.find(auth_info.user_id).first::<User>(&*conn) {
         Ok(u) => Some(u),
         _ => None,
     };
@@ -43,10 +46,11 @@ fn post_graphql_handler(
     pool: State<Pool>,
     request: juniper_rocket::GraphQLRequest,
     schema: State<Schema>,
+    auth_info: AuthInfo,
 ) -> juniper_rocket::GraphQLResponse {
     use super::db::schema::users::dsl;
     let conn = DbConn(pool.clone().get().unwrap());
-    let user = match dsl::users.order(dsl::id).first::<User>(&*conn) {
+    let user = match dsl::users.find(auth_info.user_id).first::<User>(&*conn) {
         Ok(u) => Some(u),
         _ => None,
     };

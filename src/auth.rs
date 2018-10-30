@@ -1,13 +1,17 @@
 use rocket::http::Status;
+use rocket::request::{self, FromRequest, Request};
 use rocket::response::Failure;
+use rocket::Outcome;
 use rocket::Route;
-use rocket::State;
 use rocket_contrib::Json;
+
+use dotenv::dotenv;
+use std::env;
 
 use serde_derive::{Deserialize, Serialize};
 
 use bcrypt::{hash, verify, DEFAULT_COST};
-use frank_jwt::{encode, Algorithm};
+use frank_jwt::{decode, encode, Algorithm};
 
 use super::db::models::*;
 use super::db::DbConn;
@@ -34,12 +38,54 @@ pub struct NewUserRequest {
     pub password: String,
 }
 
+pub struct AuthInfo {
+    pub user_id: i32,
+    pub user_email: String,
+    pub user_name: String,
+}
+
+fn secret() -> String {
+    dotenv().ok();
+    env::var("SECRET").expect("SECRET must be set")
+}
+
+impl<'a, 'r> FromRequest<'a, 'r> for AuthInfo {
+    type Error = ();
+
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<AuthInfo, ()> {
+        let keys: Vec<_> = request.headers().get("Authorization").collect();
+        if keys.len() != 1 {
+            return Outcome::Failure((Status::BadRequest, ()));
+        }
+
+        let key: Vec<&str> = keys[0].split(' ').collect();
+        if key.len() != 2 {
+            return Outcome::Failure((Status::BadRequest, ()));
+        }
+        let key = key[1];
+        match decode(&key.to_string(), &secret(), Algorithm::HS256) {
+            Ok((_header, payload)) => Outcome::Success(AuthInfo {
+                user_id: payload.get("user_id").unwrap().as_i64().unwrap() as i32,
+                user_email: payload
+                    .get("user_email")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+                user_name: payload
+                    .get("user_name")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_string(),
+            }),
+            Err(_e) => Outcome::Forward(()),
+        }
+    }
+}
+
 #[post("/login", data = "<login_request>")]
-fn login(
-    login_request: Json<LoginRequest>,
-    secret: State<Secret>,
-    conn: DbConn,
-) -> Result<Json<TokenResponse>, Failure> {
+fn login(login_request: Json<LoginRequest>, conn: DbConn) -> Result<Json<TokenResponse>, Failure> {
     use super::db::schema::users::dsl::*;
 
     let login_info = login_request.into_inner();
@@ -68,8 +114,8 @@ fn login(
     });
 
     let header = json!({});
-    let token = encode(header, &secret.inner().0, &payload, Algorithm::HS256)
-        .expect("Failed to encode token");
+    let token =
+        encode(header, &secret(), &payload, Algorithm::HS256).expect("Failed to encode token");
     let token_response = TokenResponse { token: token };
 
     Ok(Json(token_response))
@@ -98,9 +144,19 @@ fn new_user(
 }
 
 #[get("/renew")]
-fn renew(secret: State<Secret>) -> Result<Json<&'static str>, Status> {
-    println!{"The secret is: {:?}", secret};
-    Ok(Json("{'token': 'token'}"))
+fn renew(auth_info: AuthInfo) -> Result<Json<TokenResponse>, Status> {
+    let payload = json!({
+        "user_id": auth_info.user_id,
+        "user_email": auth_info.user_email,
+        "user_name": auth_info.user_name,
+    });
+
+    let header = json!({});
+    let token =
+        encode(header, &secret(), &payload, Algorithm::HS256).expect("Failed to encode token");
+    let token_response = TokenResponse { token: token };
+
+    Ok(Json(token_response))
 }
 
 pub fn routes() -> Vec<Route> {
