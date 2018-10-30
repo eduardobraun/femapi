@@ -16,5 +16,4 @@ RUN set -ex;\
     libssl-dev;\
     rm -rf /var/lib/apt/lists/*
 COPY --from=api_build /build-out/* /
-COPY --from=frontend_build /build-out/dist /www
 CMD ROCKET_ENV=production /femapi
