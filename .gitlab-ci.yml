@@ -16,7 +16,6 @@ build-master:
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
 
-
   stage: build
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
@@ -36,7 +35,6 @@ deploy_staging:
     - echo "$STAGING_SERVICE_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $STAGING_USER @ $STAGING_ADDR docker pull "$CI_REGISTRY_IMAGE"
   environment:
     name: staging
