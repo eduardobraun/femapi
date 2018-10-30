@@ -1,0 +1,5 @@
+CREATE TABLE projects (
+  id INTEGER PRIMARY KEY NOT NULL,
+  name VARCHAR NOT NULL,
+  archived BOOLEAN NOT NULL
+)
