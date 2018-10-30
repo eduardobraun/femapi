@@ -35,7 +35,7 @@ deploy_staging:
     - echo "$STAGING_SERVICE_KEY" | tr -d '\r' | ssh-add - > /dev/null
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $STAGING_USER @ $STAGING_ADDR docker pull "$CI_REGISTRY_IMAGE"
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker pull "$CI_REGISTRY_IMAGE"
   environment:
     name: staging
     url: https://staging.example.com
