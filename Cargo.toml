@@ -1,5 +1,5 @@
 [package]
-name = "sharefem"
+name = "femapi"
 version = "0.1.0"
 authors = ["Eduardo Braun <eduardo@rushers.org>"]
 edition = "2018"
