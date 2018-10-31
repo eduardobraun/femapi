@@ -20,6 +20,7 @@ RUN set -ex;\
 COPY ./sharefem.db /sharefem.db
 COPY ./Rocket.toml /Rocket.toml
 COPY ./diesel.toml /diesel.toml
+RUN touch /.env
 COPY ./.env /.env
 COPY ./target/release/femapi /femapi
 CMD ROCKET_ENV=production /femapi
