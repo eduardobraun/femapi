@@ -4,7 +4,7 @@ cache:
   paths:
     - target
     - sharefem.db
-    - /root/.cargo
+    - /usr/local/cargo
 
 stages:
   - test
