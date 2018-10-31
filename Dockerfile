@@ -1,8 +1,11 @@
 FROM rustlang/rust:nightly as api_build
 ARG api_url
 COPY ./ ./
+RUN cargo install diesel_cli
+RUN diesel setup
 RUN cargo build --release
 RUN mkdir -p /build-out
+RUN cp ./sharefem.db /build-out/
 RUN cp target/release/femapi /build-out/
 RUN cp .env /build-out/
 RUN cp Rocket.toml /build-out/

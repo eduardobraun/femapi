@@ -3,34 +3,33 @@ image: docker:latest
 services:
   - docker:dind
 
-# test:cargo:
-#   image: "rustlang/rust:nightly"
-#   script:
-#     - apt-get update -yqq
-#     - apt-get install -yqq --no-install-recommends build-essential
-#     - apt-get -y install ca-certificates libssl-dev
-#     - rustc --version && cargo --version
-#     - cargo test --all --verbose
+test:cargo:
+  image: "rustlang/rust:nightly"
+  script:
+    - apt-get update -yqq
+    - apt-get install -yqq --no-install-recommends build-essential
+    - apt-get -y install ca-certificates libssl-dev
+    - rustc --version && cargo --version
+    - cargo test --all --verbose
 
-# build-master:
-#   variables:
-#     GIT_SUBMODULE_STRATEGY: recursive
+build-master:
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
 
-#   stage: build
-#   script:
-#     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-#     - docker build --pull -t "$CI_REGISTRY_IMAGE" .
-#     - docker push "$CI_REGISTRY_IMAGE"
-#   only:
-#     - master
+  stage: build
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build --pull -t "$CI_REGISTRY_IMAGE" .
+    - docker push "$CI_REGISTRY_IMAGE"
+  only:
+    - master
 
 deploy_staging:
-  image: "rustlang/rust:nightly"
+  image: "debian:stretch"
   stage: deploy
   script:
     - ( apt-get update -y && apt-get install ca-certificates openssl openssh-client -y )
     - update-ca-certificates
-    - cargo install diesel_cli
     # Configure ssh access key
     - eval $(ssh-agent -s)
     - echo "$STAGING_SERVICE_KEY" | tr -d '\r' | ssh-add - > /dev/null
@@ -40,7 +39,6 @@ deploy_staging:
     - mkdir ~/femapi
     - mkdir ~/femapi/config
     - mkdir ~/femapi/data
-    #- echo "$STAGING_DOTENV" | tr -d '\r'> ~/femapi/config/.env
     - export secret=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
     - touch ~/femapi/config/env
     - echo "DATABASE_URL = sharefem.db" >> ~/femapi/config/env
@@ -48,12 +46,23 @@ deploy_staging:
     - echo "SECRET = $secret" >> ~/femapi/config/env
     - cp ./Rocket.toml ~/femapi/config
     - cp ./diesel.toml ~/femapi/config
-    - diesel setup
-    - cp ./sharefem.db ~/femapi/data
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" rm -rf ~/femapi
     - scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/femapi "$STAGING_USER"@"$STAGING_ADDR":~
 
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker pull "$CI_REGISTRY_IMAGE"
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker stop femapi
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker rm femapi
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker create --name femapi "$CI_REGISTRY_IMAGE"
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker cp femapi:/sharefem.db ~/femapi/data/sharefem.db
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker rm femapi
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker run \
+      --name femapi -d -p 80:4000 \
+      -v ~/femapi/config/Rocket.toml:/Rocket.toml \
+      -v ~/femapi/config/diesel.toml:/diesel.toml \
+      -v ~/femapi/config/env:/.env \
+      -v ~/femapi/data/sharefem.db:/sharefem.db \
+      "$CI_REGISTRY_IMAGE"
+
   environment:
     name: staging
     url: https://staging.example.com
