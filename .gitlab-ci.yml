@@ -52,15 +52,12 @@ deploy_staging:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker pull "$CI_REGISTRY_IMAGE"
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker stop femapi
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker rm femapi
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker create --name femapi "$CI_REGISTRY_IMAGE"
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker cp femapi:/sharefem.db ~/femapi/data/sharefem.db
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker rm femapi
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker run \
       --name femapi -d -p 80:4000 \
+      -v ~/www:/www \
       -v ~/femapi/config/Rocket.toml:/Rocket.toml \
       -v ~/femapi/config/diesel.toml:/diesel.toml \
       -v ~/femapi/config/env:/.env \
-      -v ~/femapi/data/sharefem.db:/sharefem.db \
       "$CI_REGISTRY_IMAGE"
 
   environment:
