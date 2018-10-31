@@ -26,7 +26,7 @@ build-master:
     - apt-get update -yqq
     - apt-get install -yqq --no-install-recommends build-essential
     - apt-get -y install ca-certificates libssl-dev
-    - cargo install diesel-cli
+    - cargo install diesel_cli
     - diesel setup
     - cargo build --release
   only:
