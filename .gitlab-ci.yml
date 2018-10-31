@@ -73,10 +73,10 @@ deploy_staging:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker rm femapi
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker run \
       --name femapi -d -p 80:4000 \
-      -v /home/`$STAGING_USER`/www:/www \
-      -v /home/`$STAGING_USER`/femapi/config/Rocket.toml:/Rocket.toml \
-      -v /home/`$STAGING_USER`/femapi/config/diesel.toml:/diesel.toml \
-      -v /home/`$STAGING_USER`/femapi/config/env:/.env \
+      -v /home/$STAGING_USER/www:/www \
+      -v /home/$STAGING_USER/femapi/config/Rocket.toml:/Rocket.toml \
+      -v /home/$STAGING_USER/femapi/config/diesel.toml:/diesel.toml \
+      -v /home/$STAGING_USER/femapi/config/env:/.env \
       "$CI_REGISTRY_IMAGE"
 
   environment:
