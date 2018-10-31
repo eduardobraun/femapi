@@ -18,7 +18,7 @@ test:cargo:
     - apt-get install -yqq --no-install-recommends build-essential
     - apt-get -y install ca-certificates libssl-dev
     - rustc --version && cargo --version
-    - cargo test --all
+    - cargo test --all --release
 
 build-master:
   stage: build
