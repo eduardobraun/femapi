@@ -1,28 +1,46 @@
-image: docker:latest
+image: "rustlang/rust:nightly"
 
-services:
-  - docker:dind
+cache:
+  paths:
+    - target
+    - sharefem.db
+
+stages:
+  - test
+  - build
+  - publish
+  - deploy
 
 test:cargo:
-  image: "rustlang/rust:nightly"
+  stage: test
   script:
     - apt-get update -yqq
     - apt-get install -yqq --no-install-recommends build-essential
     - apt-get -y install ca-certificates libssl-dev
     - rustc --version && cargo --version
-    - cargo test --all --verbose
+    - cargo test --all
 
 build-master:
-  variables:
-    GIT_SUBMODULE_STRATEGY: recursive
-
   stage: build
+  script:
+    - apt-get update -yqq
+    - apt-get install -yqq --no-install-recommends build-essential
+    - apt-get -y install ca-certificates libssl-dev
+    - cargo install diesel-cli
+    - diesel setup
+    - cargo build --release
+  only:
+    - master
+
+publish-master:
+  image: docker
+  stage: publish
+  services:
+    - docker:dind
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker build --pull -t "$CI_REGISTRY_IMAGE" .
     - docker push "$CI_REGISTRY_IMAGE"
-  only:
-    - master
 
 deploy_staging:
   image: "debian:stretch"
@@ -54,10 +72,10 @@ deploy_staging:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker rm femapi
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker run \
       --name femapi -d -p 80:4000 \
-      -v ~/www:/www \
-      -v ~/femapi/config/Rocket.toml:/Rocket.toml \
-      -v ~/femapi/config/diesel.toml:/diesel.toml \
-      -v ~/femapi/config/env:/.env \
+      -v /home/`$STAGING_USER`/www:/www \
+      -v /home/`$STAGING_USER`/femapi/config/Rocket.toml:/Rocket.toml \
+      -v /home/`$STAGING_USER`/femapi/config/diesel.toml:/diesel.toml \
+      -v /home/`$STAGING_USER`/femapi/config/env:/.env \
       "$CI_REGISTRY_IMAGE"
 
   environment:
