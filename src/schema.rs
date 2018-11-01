@@ -102,6 +102,7 @@ fn get_files_list(pid: i32) -> Vec<FileNode> {
             let entry = entry.unwrap();
             return FileNode {
                 name: entry.file_name().to_string_lossy().to_string(),
+                path: entry.path().to_string_lossy().to_string(),
                 extension: None,
                 children: Some(
                     WalkDir::new(entry.path())
@@ -113,6 +114,7 @@ fn get_files_list(pid: i32) -> Vec<FileNode> {
                             let entry = entry.unwrap();
                             FileNode {
                                 name: entry.file_name().to_string_lossy().to_string(),
+                                path: entry.path().to_string_lossy().to_string(),
                                 extension: Some(
                                     entry
                                         .path()
@@ -122,10 +124,12 @@ fn get_files_list(pid: i32) -> Vec<FileNode> {
                                         .to_string(),
                                 ),
                                 children: None,
+                                is_dir: is_dir(&entry),
                             }
                         })
                         .collect(),
                 ),
+                is_dir: is_dir(&entry),
             };
         })
         .collect();
@@ -139,6 +143,7 @@ fn get_files_list(pid: i32) -> Vec<FileNode> {
                 let entry = entry.unwrap();
                 FileNode {
                     name: entry.file_name().to_string_lossy().to_string(),
+                    path: entry.path().to_string_lossy().to_string(),
                     extension: Some(
                         entry
                             .path()
@@ -148,6 +153,7 @@ fn get_files_list(pid: i32) -> Vec<FileNode> {
                             .to_string(),
                     ),
                     children: None,
+                    is_dir: is_dir(&entry),
                 }
             })
             .collect::<Vec<FileNode>>(),
@@ -158,10 +164,12 @@ fn get_files_list(pid: i32) -> Vec<FileNode> {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct FileNode {
     name: String,
+    path: String,
     #[serde(default)]
     extension: Option<String>,
     #[serde(default)]
     children: Option<Vec<FileNode>>,
+    is_dir: bool,
 }
 
 // #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -171,6 +179,29 @@ struct FileNode {
 
 graphql_object!(FileNode: Database |&self| {
     description: ""
+
+    field name() -> String as "File name" {
+        self.name.clone()
+    }
+
+    field path() -> String as "File path" {
+        self.path.clone()
+    }
+
+    field extension() -> Option<String> as "File extension" {
+        self.extension.clone()
+    }
+
+    field children() -> Vec<FileNode> as "File extension" {
+        match self.children.clone() {
+            Some(c) => c,
+            None => vec![],
+        }
+    }
+
+    field isDir() -> bool as "Is a directory?" {
+        self.is_dir
+    }
 });
 
 graphql_object!(Member: Database |&self| {
