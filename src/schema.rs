@@ -254,9 +254,9 @@ fn copy_from_template(pid: i32) {
 
     Command::new("cp")
         .arg("-r")
-        .arg(template_base)
-        .arg(proj_base)
-        .spawn()
+        .arg(template_base.to_str().unwrap())
+        .arg(proj_base.to_str().unwrap())
+        .output()
         .expect("sh command failed to start");
 }
 
@@ -286,7 +286,9 @@ graphql_object!(MutationRoot: Database as "Mutation" |&self| {
         .values(&new_member)
         .execute(&*connection)
         .expect("Error saving new member");
-        println!{"{:?}", project};
+
+        copy_from_template(project.id);
+
         Some(project)
     }
 
