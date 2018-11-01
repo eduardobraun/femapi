@@ -2,6 +2,13 @@ use super::db::models::{Member, NewMember, NewProject, Project, User};
 use super::db::DbConn;
 use super::db::Pool;
 use super::diesel::prelude::*;
+use dotenv::dotenv;
+use serde_derive::{Deserialize, Serialize};
+use std::env;
+use std::ffi::OsStr;
+use std::path::Path;
+use std::process::Command;
+use walkdir::{DirEntry, WalkDir};
 
 use juniper::Context;
 
@@ -68,6 +75,102 @@ graphql_object!(Project: Database |&self| {
             .load::<Member>(&*connection)
             .expect("Failed to query users")
     }
+
+    field files(&executor) -> Vec<FileNode> as "Project files" {
+        get_files_list(self.id)
+    }
+});
+
+fn is_dir(entry: &DirEntry) -> bool {
+    entry.metadata().unwrap().is_dir()
+}
+fn is_file(entry: &DirEntry) -> bool {
+    entry.metadata().unwrap().is_file()
+}
+
+fn get_files_list(pid: i32) -> Vec<FileNode> {
+    dotenv().ok();
+    let proj_base = Path::new(&env::var("PROJECTS_DIR").expect("PROJECTS_DIR must be set"))
+        .join(Path::new(&pid.to_string()));
+
+    let mut dir_nodes: Vec<FileNode> = WalkDir::new(proj_base.clone())
+        .min_depth(1)
+        .max_depth(1)
+        .into_iter()
+        .filter_entry(|e| is_dir(e))
+        .map(|entry| {
+            let entry = entry.unwrap();
+            return FileNode {
+                name: entry.file_name().to_string_lossy().to_string(),
+                extension: None,
+                children: Some(
+                    WalkDir::new(entry.path())
+                        .min_depth(1)
+                        .max_depth(1)
+                        .into_iter()
+                        .filter_entry(|e| is_file(e))
+                        .map(|entry| {
+                            let entry = entry.unwrap();
+                            FileNode {
+                                name: entry.file_name().to_string_lossy().to_string(),
+                                extension: Some(
+                                    entry
+                                        .path()
+                                        .extension()
+                                        .unwrap_or(OsStr::new(""))
+                                        .to_string_lossy()
+                                        .to_string(),
+                                ),
+                                children: None,
+                            }
+                        })
+                        .collect(),
+                ),
+            };
+        })
+        .collect();
+    dir_nodes.extend(
+        WalkDir::new(proj_base)
+            .min_depth(1)
+            .max_depth(1)
+            .into_iter()
+            .filter_entry(|e| is_file(e))
+            .map(|entry| {
+                let entry = entry.unwrap();
+                FileNode {
+                    name: entry.file_name().to_string_lossy().to_string(),
+                    extension: Some(
+                        entry
+                            .path()
+                            .extension()
+                            .unwrap_or(OsStr::new(""))
+                            .to_string_lossy()
+                            .to_string(),
+                    ),
+                    children: None,
+                }
+            })
+            .collect::<Vec<FileNode>>(),
+    );
+    return dir_nodes;
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct FileNode {
+    name: String,
+    #[serde(default)]
+    extension: Option<String>,
+    #[serde(default)]
+    children: Option<Vec<FileNode>>,
+}
+
+// #[derive(Serialize, Deserialize, Debug, Clone)]
+// struct FileList {
+//     files: Vec<FileNode>,
+// }
+
+graphql_object!(FileNode: Database |&self| {
+    description: ""
 });
 
 graphql_object!(Member: Database |&self| {
@@ -141,6 +244,21 @@ graphql_object!(QueryRoot: Database as "Query" |&self| {
             .expect("Failed to query users")
     }
 });
+
+fn copy_from_template(pid: i32) {
+    dotenv().ok();
+    let proj_base = Path::new(&env::var("PROJECTS_DIR").expect("PROJECTS_DIR must be set"))
+        .join(Path::new(&pid.to_string()));
+    let template_base = Path::new(&env::var("TEMPLATES_DIR").expect("TEMPLATES_DIR must be set"))
+        .join(Path::new(&"default"));
+
+    Command::new("cp")
+        .arg("-r")
+        .arg(template_base)
+        .arg(proj_base)
+        .spawn()
+        .expect("sh command failed to start");
+}
 
 pub struct MutationRoot;
 graphql_object!(MutationRoot: Database as "Mutation" |&self| {

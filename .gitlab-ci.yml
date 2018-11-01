@@ -64,8 +64,13 @@ deploy_staging:
     - echo "SECRET = $secret" >> ~/femapi/config/env
     - cp ./Rocket.toml ~/femapi/config
     - cp ./diesel.toml ~/femapi/config
+
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" rm -rf ~/femapi
     - scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/femapi "$STAGING_USER"@"$STAGING_ADDR":~
+    # copy templates
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" mkdir  ~/femapi/data/templates
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" echo "it works" >  ~/femapi/data/templates/it_works.txt
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" mkdir  ~/femapi/data/projects
 
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker pull "$CI_REGISTRY_IMAGE"
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker stop femapi
@@ -73,6 +78,8 @@ deploy_staging:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker run \
       --name femapi -d -p 80:4000 \
       -v /home/$STAGING_USER/www:/www \
+      -v /home/$STAGING_USER/femapi/data/projects:/projects \
+      -v /home/$STAGING_USER/femapi/data/templates:/templates \
       "$CI_REGISTRY_IMAGE"
     # TODO: Cannot map individual files (or maybe only .env), for some reason
     # -v /home/$STAGING_USER/femapi/config/Rocket.toml:/Rocket.toml \
