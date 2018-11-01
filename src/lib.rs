@@ -1,3 +1,4 @@
+#![feature(custom_attribute)]
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
 #[macro_use]
@@ -11,6 +12,8 @@ extern crate rocket;
 extern crate serde_json;
 
 extern crate bcrypt;
+
+extern crate walkdir;
 
 use rocket::fairing::AdHoc;
 use rocket::http::Method;
