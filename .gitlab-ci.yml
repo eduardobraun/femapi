@@ -3,7 +3,6 @@ image: "registry.gitlab.com/sharefem/femapi/cargo_diesel_builder:latest"
 cache:
   paths:
     - target
-    - sharefem.db
 
 stages:
   - test
@@ -33,6 +32,7 @@ build-master:
 build-builder:
   image: docker
   stage: build
+  cache: {}
   services:
     - docker:dind
   script:
@@ -44,6 +44,7 @@ build-builder:
 publish-master:
   image: docker
   stage: publish
+  cache: {}
   services:
     - docker:dind
   script:
@@ -56,6 +57,7 @@ publish-master:
 deploy_staging:
   image: "debian:stretch"
   stage: deploy
+  cache: {}
   script:
     - ( apt-get update -y && apt-get install ca-certificates openssl openssh-client -y )
     - update-ca-certificates
