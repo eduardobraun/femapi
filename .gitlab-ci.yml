@@ -22,6 +22,11 @@ build-master:
   script:
     - diesel setup
     - cargo build --release
+  artifacts:
+    paths:
+    - ./target/release/femapi
+    - sharefem.db
+    expire_in: 1 week
   only:
     - master
 
@@ -63,6 +68,8 @@ deploy_staging:
     - mkdir ~/femapi
     - mkdir ~/femapi/config
     - mkdir ~/femapi/data
+    - mkdir ~/femapi/data/projects
+    - mkdir ~/femapi/data/templates
     - export secret=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
     - touch ~/femapi/config/env
     - echo "DATABASE_URL=sharefem.db" >> ~/femapi/config/env
@@ -73,7 +80,7 @@ deploy_staging:
     - cp ./Rocket.toml ~/femapi/config
     - cp ./diesel.toml ~/femapi/config
 
-    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" rm -rf /home/$STAGING_USER/femapi
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" sudo rm -rf /home/$STAGING_USER/femapi
     - scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/femapi "$STAGING_USER"@"$STAGING_ADDR":~
 
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker pull "$CI_REGISTRY_IMAGE"
@@ -84,13 +91,11 @@ deploy_staging:
       -v /home/$STAGING_USER/www:/www \
       -v /home/$STAGING_USER/femapi/data/projects:/projects \
       -v /home/$STAGING_USER/femapi/data/templates:/templates \
+      -v /home/$STAGING_USER/femapi/config/Rocket.toml:/Rocket.toml \
+      -v /home/$STAGING_USER/femapi/config/diesel.toml:/diesel.toml \
       "$CI_REGISTRY_IMAGE"
-    # TODO: Cannot map individual files (or maybe only .env), for some reason
-    # -v /home/$STAGING_USER/femapi/config/Rocket.toml:/Rocket.toml \
-    # -v /home/$STAGING_USER/femapi/config/diesel.toml:/diesel.toml \
-
   environment:
     name: staging
-    url: https://staging.example.com
+    url: http://$STAGING_ADDR
   only:
   - master
