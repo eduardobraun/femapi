@@ -1,4 +1,4 @@
-image: "rustlang/rust:nightly"
+image: "registry.gitlab.com/sharefem/femapi/cargo_diesel_builder:latest"
 
 cache:
   paths:
@@ -14,19 +14,12 @@ stages:
 test:cargo:
   stage: test
   script:
-    - apt-get update -yqq
-    - apt-get install -yqq --no-install-recommends build-essential
-    - apt-get -y install ca-certificates libssl-dev
     - rustc --version && cargo --version
     - cargo test --all --release
 
 build-master:
   stage: build
   script:
-    - apt-get update -yqq
-    - apt-get install -yqq --no-install-recommends build-essential
-    - apt-get -y install ca-certificates libssl-dev
-    - cargo install diesel_cli
     - diesel setup
     - cargo build --release
   only:
