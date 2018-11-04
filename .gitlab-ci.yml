@@ -32,6 +32,17 @@ build-master:
   only:
     - master
 
+build-builder:
+  image: docker
+  stage: build
+  services:
+    - docker:dind
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build --pull -t "registry.gitlab.com/sharefem/cargo_diesel_builder" .
+    - docker push "registry.gitlab.com/sharefem/cargo_diesel_builder"
+  when: manual
+
 publish-master:
   image: docker
   stage: publish
