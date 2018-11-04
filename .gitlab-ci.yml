@@ -39,7 +39,7 @@ build-builder:
     - docker:dind
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    - docker build --pull -t "registry.gitlab.com/sharefem/femapi/cargo_diesel_builder" .
+    - docker build --pull -f "./Dockerfile.builder" -t "registry.gitlab.com/sharefem/femapi/cargo_diesel_builder" .
     - docker push "registry.gitlab.com/sharefem/femapi/cargo_diesel_builder"
   when: manual
 
