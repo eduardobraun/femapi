@@ -231,6 +231,7 @@ dependencies = [
  "diesel 1.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "frank_jwt 3.0.2 (git+https://github.com/GildedHonour/frank_jwt)",
+ "grounded_path 0.1.0 (git+https://gitlab.com/etb/grounded_path)",
  "juniper 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "juniper_codegen 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "juniper_rocket 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -301,6 +302,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "typenum 1.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "grounded_path"
+version = "0.1.0"
+source = "git+https://gitlab.com/etb/grounded_path#ee1c84f993798153521f6b43a291adc35de7014c"
 
 [[package]]
 name = "httparse"
@@ -1095,6 +1101,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum fuchsia-zircon-sys 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3dcaa9ae7725d12cdb85b3ad99a434db70b468c09ded17e012d86b5c1010f7a7"
 "checksum gcc 0.3.55 (registry+https://github.com/rust-lang/crates.io-index)" = "8f5f3913fa0bfe7ee1fd8248b6b9f42a5af4b9d65ec2dd2c3c26132b950ecfc2"
 "checksum generic-array 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ef25c5683767570c2bbd7deba372926a55eaae9982d7726ee2a1050239d45b9d"
+"checksum grounded_path 0.1.0 (git+https://gitlab.com/etb/grounded_path)" = "<none>"
 "checksum httparse 1.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "e8734b0cfd3bc3e101ec59100e101c2eecd19282202e87808b3037b442777a83"
 "checksum hyper 0.10.15 (registry+https://github.com/rust-lang/crates.io-index)" = "df0caae6b71d266b91b4a83111a61d2b94ed2e2bea024c532b933dcff867e58c"
 "checksum idna 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "38f09e0f0b1fb55fdee1f17470ad800da77af5186a1a76c026b679358b7e844e"

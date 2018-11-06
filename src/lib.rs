@@ -14,6 +14,7 @@ extern crate rocket_cors;
 #[macro_use]
 extern crate serde_derive;
 extern crate frank_jwt;
+extern crate grounded_path;
 extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate rocket_contrib;
@@ -27,15 +28,11 @@ use rocket::http::Method;
 use rocket::{Response, Rocket};
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 
-mod db;
-
-// mod model;
-mod schema;
-
-// use self::model::Database;
-
 mod auth;
+mod db;
+mod filestore;
 mod graphql;
+mod schema;
 mod server_error;
 mod static_file;
 

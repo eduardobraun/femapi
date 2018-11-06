@@ -22,3 +22,4 @@ juniper_rocket = "0.1.3"
 bcrypt = "0.2"
 frank_jwt = {git = "https://github.com/GildedHonour/frank_jwt"}
 walkdir = "2"
+grounded_path = {git = "https://gitlab.com/etb/grounded_path"}
