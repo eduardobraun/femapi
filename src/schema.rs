@@ -6,6 +6,7 @@ use dotenv::dotenv;
 use serde_derive::{Deserialize, Serialize};
 use std::env;
 use std::ffi::OsStr;
+use std::fs;
 use std::path::Path;
 use std::process::Command;
 use walkdir::{DirEntry, WalkDir};
@@ -276,19 +277,53 @@ graphql_object!(QueryRoot: Database as "Query" |&self| {
     }
 });
 
-fn copy_from_template(pid: i32) {
+fn copy_from_template(pid: i32) -> std::io::Result<()> {
     dotenv().ok();
     let proj_base = Path::new(&env::var("PROJECTS_DIR").expect("PROJECTS_DIR must be set"))
         .join(Path::new(&pid.to_string()));
     let template_base = Path::new(&env::var("TEMPLATES_DIR").expect("TEMPLATES_DIR must be set"))
         .join(Path::new(&"default"));
 
-    Command::new("cp")
-        .arg("-r")
-        .arg(template_base.to_str().unwrap())
-        .arg(proj_base.to_str().unwrap())
-        .output()
-        .expect("sh command failed to start");
+    // Project directory should not exist if the ID is unique
+    // TODO: For now projects are deleted from SQLite and the ID is reused.
+    if proj_base.exists() {
+        fs::remove_dir_all(&proj_base)?;
+    }
+    fs::create_dir_all(&proj_base)?;
+
+    if template_base.exists() {
+        copy_files(&template_base, &proj_base)?;
+    }
+
+    // Command::new("cp")
+    //     .arg("-r")
+    //     .arg(template_base.to_str().unwrap())
+    //     .arg(proj_base.to_str().unwrap())
+    //     .output()
+    //     .expect("sh command failed to start");
+    Ok(())
+}
+
+fn copy_files(from: &Path, to: &Path) -> std::io::Result<()> {
+    for file in WalkDir::new(&from)
+        .min_depth(1)
+        .max_depth(1)
+        .into_iter()
+        .filter_entry(|e| is_file(e))
+    {
+        let file = file.unwrap();
+        fs::copy(file.path(), to.join(file.file_name().to_str().unwrap()))?;
+    }
+    for dir in WalkDir::new(&from)
+        .min_depth(1)
+        .max_depth(1)
+        .into_iter()
+        .filter_entry(|e| is_dir(e))
+    {
+        let dir = dir.unwrap();
+        copy_files(dir.path(), &to.join(dir.file_name().to_str().unwrap()))?;
+    }
+    Ok(())
 }
 
 pub struct MutationRoot;
