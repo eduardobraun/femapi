@@ -2,15 +2,12 @@ use super::db::models::{Member, NewMember, NewProject, Project, User};
 use super::db::DbConn;
 use super::db::Pool;
 use super::diesel::prelude::*;
-use dotenv::dotenv;
-use serde_derive::{Deserialize, Serialize};
-use std::env;
-use std::ffi::OsStr;
-use std::path::Path;
-use std::process::Command;
-use walkdir::{DirEntry, WalkDir};
-
+use super::filestore::{FileNode, FileStore};
+use grounded_path::GroundedPath;
 use juniper::Context;
+use serde_derive::{Deserialize, Serialize};
+use std::fs;
+use std::path::Path;
 
 pub struct Database {
     pub current_user: Option<User>,
@@ -77,105 +74,9 @@ graphql_object!(Project: Database |&self| {
     }
 
     field files(&executor) -> Vec<FileNode> as "Project files" {
-        get_files_list(self.id)
+        FileStore::dir(&FileStore::project_root(self.id))
     }
 });
-
-fn is_dir(entry: &DirEntry) -> bool {
-    entry.metadata().unwrap().is_dir()
-}
-fn is_file(entry: &DirEntry) -> bool {
-    entry.metadata().unwrap().is_file()
-}
-
-fn get_files_list(pid: i32) -> Vec<FileNode> {
-    dotenv().ok();
-    let proj_base = Path::new(&env::var("PROJECTS_DIR").expect("PROJECTS_DIR must be set"))
-        .join(Path::new(&pid.to_string()));
-
-    let mut dir_nodes: Vec<FileNode> = WalkDir::new(proj_base.clone())
-        .min_depth(1)
-        .max_depth(1)
-        .into_iter()
-        .filter_entry(|e| is_dir(e))
-        .map(|entry| {
-            let entry = entry.unwrap();
-            return FileNode {
-                name: entry.file_name().to_string_lossy().to_string(),
-                path: entry.path().to_string_lossy().to_string(),
-                extension: None,
-                children: Some(
-                    WalkDir::new(entry.path())
-                        .min_depth(1)
-                        .max_depth(1)
-                        .into_iter()
-                        .filter_entry(|e| is_file(e))
-                        .map(|entry| {
-                            let entry = entry.unwrap();
-                            FileNode {
-                                name: entry.file_name().to_string_lossy().to_string(),
-                                path: entry.path().to_string_lossy().to_string(),
-                                extension: Some(
-                                    entry
-                                        .path()
-                                        .extension()
-                                        .unwrap_or(OsStr::new(""))
-                                        .to_string_lossy()
-                                        .to_string(),
-                                ),
-                                children: None,
-                                is_dir: is_dir(&entry),
-                            }
-                        })
-                        .collect(),
-                ),
-                is_dir: is_dir(&entry),
-            };
-        })
-        .collect();
-    dir_nodes.extend(
-        WalkDir::new(proj_base)
-            .min_depth(1)
-            .max_depth(1)
-            .into_iter()
-            .filter_entry(|e| is_file(e))
-            .map(|entry| {
-                let entry = entry.unwrap();
-                FileNode {
-                    name: entry.file_name().to_string_lossy().to_string(),
-                    path: entry.path().to_string_lossy().to_string(),
-                    extension: Some(
-                        entry
-                            .path()
-                            .extension()
-                            .unwrap_or(OsStr::new(""))
-                            .to_string_lossy()
-                            .to_string(),
-                    ),
-                    children: None,
-                    is_dir: is_dir(&entry),
-                }
-            })
-            .collect::<Vec<FileNode>>(),
-    );
-    return dir_nodes;
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct FileNode {
-    name: String,
-    path: String,
-    #[serde(default)]
-    extension: Option<String>,
-    #[serde(default)]
-    children: Option<Vec<FileNode>>,
-    is_dir: bool,
-}
-
-// #[derive(Serialize, Deserialize, Debug, Clone)]
-// struct FileList {
-//     files: Vec<FileNode>,
-// }
 
 graphql_object!(FileNode: Database |&self| {
     description: ""
@@ -276,21 +177,6 @@ graphql_object!(QueryRoot: Database as "Query" |&self| {
     }
 });
 
-fn copy_from_template(pid: i32) {
-    dotenv().ok();
-    let proj_base = Path::new(&env::var("PROJECTS_DIR").expect("PROJECTS_DIR must be set"))
-        .join(Path::new(&pid.to_string()));
-    let template_base = Path::new(&env::var("TEMPLATES_DIR").expect("TEMPLATES_DIR must be set"))
-        .join(Path::new(&"default"));
-
-    Command::new("cp")
-        .arg("-r")
-        .arg(template_base.to_str().unwrap())
-        .arg(proj_base.to_str().unwrap())
-        .output()
-        .expect("sh command failed to start");
-}
-
 pub struct MutationRoot;
 graphql_object!(MutationRoot: Database as "Mutation" |&self| {
     description: "The root mutation object of the schema"
@@ -318,7 +204,12 @@ graphql_object!(MutationRoot: Database as "Mutation" |&self| {
         .execute(&*connection)
         .expect("Error saving new member");
 
-        copy_from_template(project.id);
+        let project_root = FileStore::project_root(project.id);
+        FileStore::create_all(&project_root);
+        // TODO: select template
+        let template_root = FileStore::template_root(&"default");
+        FileStore::copy_recursive(&template_root, &project_root);
+
 
         Some(project)
     }
