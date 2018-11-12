@@ -74,7 +74,7 @@ deploy_staging:
     - mkdir ~/femapi/data/templates
     - export secret=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
     - touch ~/femapi/config/env
-    - echo "DATABASE_URL=sharefem.db" >> ~/femapi/config/env
+    - echo "DATABASE_URL=postgres://$STAGING_PG_USER:$STAGING_PG_PASS@fempg/sharefem" >> ~/femapi/config/env
     - echo "STATIC_DIR=/www" >> ~/femapi/config/env
     - echo "PROJECTS_DIR=/projects" >> ~/femapi/config/env
     - echo "TEMPLATES_DIR=/templates" >> ~/femapi/config/env
