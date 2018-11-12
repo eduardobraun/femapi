@@ -85,6 +85,12 @@ deploy_staging:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" sudo rm -rf /home/$STAGING_USER/femapi
     - scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ~/femapi "$STAGING_USER"@"$STAGING_ADDR":~
 
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker pull postgres
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker stop fempg
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker run \
+      --name fempg --rm -d \
+      -e POSTGRES_PASSWORD="$STAGING_PG_PASS" \
+      postgres
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker pull "$CI_REGISTRY_IMAGE"
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker stop femapi
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker run \
@@ -95,6 +101,7 @@ deploy_staging:
       -v /home/$STAGING_USER/femapi/data/templates:/templates \
       -v /home/$STAGING_USER/femapi/config/Rocket.toml:/Rocket.toml \
       -v /home/$STAGING_USER/femapi/config/diesel.toml:/diesel.toml \
+      --link fempg:fempg \
       "$CI_REGISTRY_IMAGE"
   environment:
     name: staging
