@@ -12,6 +12,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use bcrypt::{hash, verify, DEFAULT_COST};
 use frank_jwt::{decode, encode, Algorithm};
+use uuid::Uuid;
 
 use super::db::models::*;
 use super::db::DbConn;
@@ -39,7 +40,7 @@ pub struct NewUserRequest {
 }
 
 pub struct AuthInfo {
-    pub user_id: i32,
+    pub user_id: Uuid,
     pub user_email: String,
     pub user_name: String,
 }
@@ -65,7 +66,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for AuthInfo {
         let key = key[1];
         match decode(&key.to_string(), &secret(), Algorithm::HS256) {
             Ok((_header, payload)) => Outcome::Success(AuthInfo {
-                user_id: payload.get("user_id").unwrap().as_i64().unwrap() as i32,
+                user_id: Uuid::parse_str(payload.get("user_id").unwrap().as_str().unwrap())
+                    .unwrap(),
                 user_email: payload
                     .get("user_email")
                     .unwrap()
@@ -130,6 +132,7 @@ fn new_user(
 
     let hashed = hash(&new_user_request.password, DEFAULT_COST).expect("Error hashing password");
     let new_user = NewUser {
+        id: Uuid::new_v4(),
         name: &new_user_request.name.clone(),
         email: &new_user_request.email.clone(),
         password: &hashed.clone(),

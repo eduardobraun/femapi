@@ -8,6 +8,7 @@ use juniper::Context;
 use serde_derive::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+use uuid::Uuid;
 
 pub struct Database {
     pub current_user: Option<User>,
@@ -26,8 +27,8 @@ pub enum Permission {
 graphql_object!(User: Database |&self| {
     description: "A todo item that that can be marked as completed"
 
-    field id() -> i32 as "The unique id of the todo item" {
-        self.id
+    field id() -> String as "The unique id of the todo item" {
+        self.id.hyphenated().to_string()
     }
 
     field name() -> &str as "The user-editable title" {
@@ -56,8 +57,8 @@ graphql_object!(User: Database |&self| {
 graphql_object!(Project: Database |&self| {
     description: "A todo item that that can be marked as completed"
 
-    field id() -> i32 as "The unique id of the todo item" {
-        self.id
+    field id() -> String as "The unique id of the todo item" {
+        self.id.hyphenated().to_string()
     }
 
     field name() -> &str as "The user-editable title" {
@@ -165,11 +166,12 @@ graphql_object!(QueryRoot: Database as "Query" |&self| {
             .expect("Failed to query users")
     }
 
-    field project(&executor, id: i32) -> Project
+    field project(&executor, id: String) -> Project
         as "Get all todo items in the system ordered by date"
     {
         use super::db::schema::projects::dsl;
 
+        let id = Uuid::parse_str(&id).unwrap();
         let connection = DbConn(executor.context().pool.get().unwrap());
         dsl::projects.find(id)
             .first::<Project>(&*connection)
@@ -190,7 +192,7 @@ graphql_object!(MutationRoot: Database as "Mutation" |&self| {
         let connection = DbConn(executor.context().pool.get().unwrap());
 
         let user = executor.context().current_user.clone().expect("No current user");
-        let new_project = NewProject{name: &name, archived: false};
+        let new_project = NewProject{id: Uuid::new_v4(), name: &name, archived: false};
         diesel::insert_into(pdsl::projects)
         .values(&new_project)
         .execute(&*connection)
@@ -214,10 +216,11 @@ graphql_object!(MutationRoot: Database as "Mutation" |&self| {
         Some(project)
     }
 
-    field delete_project(&executor, pid: i32) -> bool as "Deletes a project" {
+    field delete_project(&executor, pid: String) -> bool as "Deletes a project" {
         use super::db::schema::projects::dsl as pdsl;
         use super::db::schema::members::dsl as mdsl;
         let connection = DbConn(executor.context().pool.get().unwrap());
+        let pid = Uuid::parse_str(&pid).unwrap();
         diesel::delete(mdsl::members.filter(mdsl::project_id.eq(pid))).execute(&*connection).unwrap();
         diesel::delete(pdsl::projects.filter(pdsl::id.eq(pid))).execute(&*connection).unwrap();
         true

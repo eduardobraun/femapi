@@ -18,6 +18,7 @@ extern crate grounded_path;
 extern crate r2d2;
 extern crate r2d2_diesel;
 extern crate rocket_contrib;
+extern crate uuid;
 
 extern crate bcrypt;
 

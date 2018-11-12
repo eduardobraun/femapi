@@ -4,6 +4,7 @@ use std::env;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
+use uuid::Uuid;
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -82,7 +83,7 @@ fn get_filenode(path: GroundedPath) -> FileNode {
 }
 
 impl FileStore {
-    pub fn project_root(pid: i32) -> GroundedPath {
+    pub fn project_root(pid: Uuid) -> GroundedPath {
         dotenv().ok();
         GroundedPath::new(
             Path::new(&env::var("PROJECTS_DIR").expect("PROJECTS_DIR must be set"))

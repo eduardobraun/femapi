@@ -1,25 +1,25 @@
 table! {
     members (user_id, project_id) {
-        user_id -> Integer,
-        project_id -> Integer,
-        permission -> Text,
+        user_id -> Uuid,
+        project_id -> Uuid,
+        permission -> Varchar,
     }
 }
 
 table! {
     projects (id) {
-        id -> Integer,
-        name -> Text,
+        id -> Uuid,
+        name -> Varchar,
         archived -> Bool,
     }
 }
 
 table! {
     users (id) {
-        id -> Integer,
-        name -> Text,
-        email -> Text,
-        password -> Text,
+        id -> Uuid,
+        name -> Varchar,
+        email -> Varchar,
+        password -> Varchar,
     }
 }
 

@@ -2,10 +2,11 @@
 use super::schema::{members, projects, users};
 use diesel::{Associations, Identifiable, Insertable, Queryable};
 use serde_derive::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Queryable, PartialEq, Identifiable, Clone, Debug)]
 pub struct User {
-    pub id: i32,
+    pub id: Uuid,
     pub name: String,
     pub email: String,
     pub password: String,
@@ -14,6 +15,7 @@ pub struct User {
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "users"]
 pub struct NewUser<'a> {
+    pub id: Uuid,
     pub name: &'a str,
     pub email: &'a str,
     pub password: &'a str,
@@ -21,7 +23,7 @@ pub struct NewUser<'a> {
 
 #[derive(Queryable, Identifiable, Clone, Debug)]
 pub struct Project {
-    pub id: i32,
+    pub id: Uuid,
     pub name: String,
     pub archived: bool,
 }
@@ -29,6 +31,7 @@ pub struct Project {
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "projects"]
 pub struct NewProject<'a> {
+    pub id: Uuid,
     pub name: &'a str,
     pub archived: bool,
 }
@@ -37,15 +40,15 @@ pub struct NewProject<'a> {
 #[belongs_to(User, foreign_key = "user_id")]
 #[belongs_to(Project, foreign_key = "project_id")]
 pub struct Member {
-    pub user_id: i32,
-    pub project_id: i32,
+    pub user_id: Uuid,
+    pub project_id: Uuid,
     pub permission: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "members"]
 pub struct NewMember<'a> {
-    pub user_id: i32,
-    pub project_id: i32,
+    pub user_id: Uuid,
+    pub project_id: Uuid,
     pub permission: &'a str,
 }
