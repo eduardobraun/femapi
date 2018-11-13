@@ -3,11 +3,7 @@ use super::db::DbConn;
 use super::db::Pool;
 use super::diesel::prelude::*;
 use super::filestore::{FileNode, FileStore};
-use grounded_path::GroundedPath;
 use juniper::Context;
-use serde_derive::{Deserialize, Serialize};
-use std::fs;
-use std::path::Path;
 use uuid::Uuid;
 
 pub struct Database {

@@ -3,7 +3,7 @@ use grounded_path::GroundedPath;
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use uuid::Uuid;
 use walkdir::{DirEntry, WalkDir};
 
