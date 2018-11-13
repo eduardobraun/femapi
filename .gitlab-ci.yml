@@ -69,7 +69,10 @@ deploy_staging:
     - mkdir ~/femapi/config
     - mkdir ~/femapi/data
     - mkdir ~/femapi/data/projects
-    - mkdir ~/femapi/data/templates
+    # - mkdir ~/femapi/data/templates
+    - curl --header "JOB-TOKEN: $CI_JOB_TOKEN" "https://gitlab.com/api/v4/projects/9379754/jobs/artifacts/master/download?job=build:master"
+    - unzip artifacts.zip
+    - mv ./templates ~/femapi/data
     - export secret=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
     - touch ~/femapi/config/env
     - echo "DATABASE_URL=postgres://""$STAGING_PG_USER"":""$STAGING_PG_PASS""@""$STAGING_PG_HOST""/""$STAGING_PG_DB" >> ~/femapi/config/env
