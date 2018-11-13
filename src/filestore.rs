@@ -142,12 +142,15 @@ impl FileStore {
             .filter_entry(|e| is_dir(e))
         {
             let dir = dir.unwrap();
+            let to_dir = to
+                .clone()
+                .join(Path::new(dir.file_name().to_str().unwrap()));
+            Self::create_all(&to_dir);
             Self::copy_recursive(
                 &from
                     .clone()
                     .join(Path::new(dir.file_name().to_str().unwrap())),
-                &to.clone()
-                    .join(Path::new(dir.file_name().to_str().unwrap())),
+                &to_dir,
             );
         }
     }
