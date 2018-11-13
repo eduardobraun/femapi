@@ -18,7 +18,6 @@ RUN set -ex;\
     libpq5 \
     libssl-dev;\
     rm -rf /var/lib/apt/lists/*
-COPY ./sharefem.db /sharefem.db
 COPY ./Rocket.toml /Rocket.toml
 COPY ./diesel.toml /diesel.toml
 RUN touch /.env
