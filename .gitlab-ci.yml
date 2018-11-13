@@ -57,7 +57,7 @@ deploy_staging:
   stage: deploy
   cache: {}
   script:
-    - ( apt-get update -y && apt-get install ca-certificates openssl openssh-client -y )
+    - ( apt-get update -y && apt-get install ca-certificates openssl openssh-client curl unzip -y )
     - update-ca-certificates
     # Configure ssh access key
     - eval $(ssh-agent -s)
