@@ -152,9 +152,11 @@ graphql_object!(QueryRoot: Database as "Query" |&self| {
     }
 
     field projects(&executor) -> Vec<Project>
-        as "Get all todo items in the system ordered by date"
+        as "Get projects in the system"
     {
         use super::db::schema::projects::dsl;
+
+        //TODO: filter by current_user id
 
         let connection = DbConn(executor.context().pool.get().unwrap());
         dsl::projects.order(dsl::id)
@@ -189,13 +191,11 @@ graphql_object!(MutationRoot: Database as "Mutation" |&self| {
 
         let user = executor.context().current_user.clone().expect("No current user");
         let new_project = NewProject{id: Uuid::new_v4(), name: &name, archived: false};
-        diesel::insert_into(pdsl::projects)
+        let project: Project = diesel::insert_into(pdsl::projects)
         .values(&new_project)
-        .execute(&*connection)
+        .get_result(&*connection)
         .expect("Error saving new project");
-        let project = pdsl::projects.order(pdsl::id.desc())
-            .first::<Project>(&*connection)
-            .expect("Failed to query project");
+
         let new_member = NewMember{user_id: user.id, project_id: project.id, permission: &"OWNER".to_owned()};
         diesel::insert_into(mdsl::members)
         .values(&new_member)
