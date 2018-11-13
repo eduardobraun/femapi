@@ -70,7 +70,7 @@ deploy_staging:
     - mkdir ~/femapi/data
     - mkdir ~/femapi/data/projects
     # - mkdir ~/femapi/data/templates
-    - curl --header "JOB-TOKEN: $CI_JOB_TOKEN" "https://gitlab.com/api/v4/projects/9379754/jobs/artifacts/master/download?job=build:master"
+    - "curl --header \"JOB-TOKEN: $CI_JOB_TOKEN\" https://gitlab.com/api/v4/projects/9379754/jobs/artifacts/master/download?job=build:master"
     - unzip artifacts.zip
     - mv ./templates ~/femapi/data
     - export secret=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
