@@ -5,13 +5,12 @@ cache:
     - target
 
 stages:
-  - test
   - build
   - publish
   - deploy
 
-test:cargo:
-  stage: test
+test:
+  stage: build
   script:
     - rustc --version && cargo --version
     - cargo test --all --release
