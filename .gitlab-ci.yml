@@ -46,6 +46,11 @@ publish-master:
   services:
     - docker:dind
   script:
+    - apk add --no-cache curl unzip
+    - "curl -L --header \"JOB-TOKEN: $CI_JOB_TOKEN\" https://gitlab.com/api/v4/projects/9379754/jobs/artifacts/master/download?job=build:master > templates.zip"
+    - unzip templates.zip
+    - "curl -L --header \"JOB-TOKEN: $CI_JOB_TOKEN\" https://gitlab.com/api/v4/projects/9121357/jobs/artifacts/master/download?job=build:master > dist.zip"
+    - unzip dist.zip
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker build --pull -t "$CI_REGISTRY_IMAGE" .
     - docker push "$CI_REGISTRY_IMAGE"
@@ -69,10 +74,6 @@ deploy_staging:
     - mkdir ~/femapi/config
     - mkdir ~/femapi/data
     - mkdir ~/femapi/data/projects
-    # - mkdir ~/femapi/data/templates
-    - "curl -L --header \"JOB-TOKEN: $CI_JOB_TOKEN\" https://gitlab.com/api/v4/projects/9379754/jobs/artifacts/master/download?job=build:master > artifacts.zip"
-    - unzip artifacts.zip
-    - mv ./templates ~/femapi/data
     - export secret=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
     - touch ~/femapi/config/env
     - echo "DATABASE_URL=postgres://""$STAGING_PG_USER"":""$STAGING_PG_PASS""@""$STAGING_PG_HOST""/""$STAGING_PG_DB" >> ~/femapi/config/env
@@ -91,9 +92,7 @@ deploy_staging:
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" docker run \
       --name femapi --rm -d -p 80:4000 \
       -v /home/$STAGING_USER/femapi/config/env:/.env \
-      -v /home/$STAGING_USER/www:/www \
       -v /home/$STAGING_USER/femapi/data/projects:/projects \
-      -v /home/$STAGING_USER/femapi/data/templates:/templates \
       -v /home/$STAGING_USER/femapi/config/Rocket.toml:/Rocket.toml \
       -v /home/$STAGING_USER/femapi/config/diesel.toml:/diesel.toml \
       --link "$STAGING_PG_HOST":"STAGING_PG_HOST" \
