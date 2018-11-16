@@ -118,17 +118,21 @@ graphql_object!(MutationRoot: SchemaContext as "Mutation" |&self| {
     field new_project(&executor, name: String) -> FieldResult<Project>
         as "Creates a new project"
     {
-        match executor
-              .context()
-              .db_addr
-              .send(CreateProject{name: name})
-              .wait()
-              .unwrap() {
-            Ok(project) => Ok(project),
-            Err(_e) => Err(FieldError::new(
-                "Could not create Project",
-                graphql_value!({ "internal_error": ""})
-            )),
+        match executor.context().current_user.clone() {
+            Some(current_user) =>
+            match executor
+                .context()
+                .db_addr
+                .send(CreateProject{name: name, user: current_user})
+                .wait()
+                .unwrap() {
+                Ok(project) => Ok(project),
+                Err(_e) => Err(FieldError::new(
+                    "Could not create Project",
+                    graphql_value!({ "internal_error": ""})
+                )),
+            },
+            None => Err(FieldError::new("Invalid credentials", graphql_value!({"internal_error": ""})))
         }
     }
 

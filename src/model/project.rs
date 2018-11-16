@@ -1,6 +1,7 @@
 use actix_web::actix::Message;
 use chrono::{NaiveDateTime, Utc};
 use crate::model::response::MyError;
+use crate::model::user::User;
 use crate::share::schema::projects;
 use diesel::{Identifiable, Insertable, Queryable};
 use serde_derive::{Deserialize, Serialize};
@@ -26,6 +27,7 @@ pub struct NewProject<'a> {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreateProject {
     pub name: String,
+    pub user: User,
 }
 
 impl Message for CreateProject {

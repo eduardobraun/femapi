@@ -4,8 +4,11 @@ use diesel::{self, QueryDsl, RunQueryDsl};
 use uuid::Uuid;
 
 use crate::model::db::ConnDsl;
-use crate::model::project::{CreateProject, NewProject, Project, ProjectById};
 use crate::model::response::MyError;
+use crate::model::{
+    member::Member,
+    project::{CreateProject, NewProject, Project, ProjectById},
+};
 
 impl Handler<ProjectById> for ConnDsl {
     type Result = Result<Project, MyError>;
@@ -29,6 +32,7 @@ impl Handler<CreateProject> for ConnDsl {
     type Result = Result<Project, MyError>;
 
     fn handle(&mut self, create_project: CreateProject, _: &mut Self::Context) -> Self::Result {
+        use crate::share::schema::members::dsl as mdsl;
         use crate::share::schema::projects::dsl;
         let conn = &self.0.get().map_err(|_| MyError::DatabaseError)?;
         let new_project = NewProject {
@@ -42,6 +46,18 @@ impl Handler<CreateProject> for ConnDsl {
             .values(&new_project)
             .get_result(conn)
             .map_err(|_e| MyError::DatabaseError)?;
+
+        let new_member = Member {
+            user_id: create_project.user.id,
+            project_id: project.id,
+            permission: "OWNER".to_string(),
+        };
+
+        let _member: Member = diesel::insert_into(mdsl::members)
+            .values(&new_member)
+            .get_result(conn)
+            .map_err(|_e| MyError::DatabaseError)?;
+
         Ok(project)
     }
 }
