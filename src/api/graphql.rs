@@ -1,11 +1,10 @@
 use actix_web::{AsyncResponder, FutureResponse, HttpRequest, HttpResponse, Json, State};
-use futures::future::{err as FutErr, ok as FutOk, FutureResult};
+use futures::future::ok as FutOk;
 use futures::Future;
 use juniper::http::GraphQLRequest;
 
 use crate::middleware::authenticator::RequestJWTAuth;
 use crate::model::graphql::GraphQLData;
-use crate::share::common::Claims;
 use crate::share::state::AppState;
 
 pub fn graphql(

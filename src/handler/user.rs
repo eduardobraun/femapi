@@ -1,7 +1,7 @@
 use actix_web::{actix::Handler, error, Error};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
-use diesel::{self, sql_query, ExpressionMethods, QueryDsl, RunQueryDsl};
+use diesel::{self, ExpressionMethods, QueryDsl, RunQueryDsl};
 use jsonwebtoken::{encode, Header};
 use uuid::Uuid;
 

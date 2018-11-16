@@ -8,8 +8,6 @@ extern crate diesel_migrations;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
 extern crate actix_web;
 extern crate bcrypt;
 extern crate chrono;
@@ -20,6 +18,7 @@ extern crate http;
 extern crate jsonwebtoken;
 extern crate num_cpus;
 extern crate postgres;
+extern crate serde_json;
 #[macro_use]
 extern crate juniper;
 // extern crate frank_jwt;

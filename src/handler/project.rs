@@ -1,12 +1,11 @@
-use actix_web::{actix::Handler, error, Error};
+use actix_web::actix::Handler;
 use chrono::Utc;
-use diesel::{self, sql_query, ExpressionMethods, QueryDsl, RunQueryDsl};
+use diesel::{self, QueryDsl, RunQueryDsl};
 use uuid::Uuid;
 
 use crate::model::db::ConnDsl;
 use crate::model::project::{CreateProject, NewProject, Project, ProjectById};
 use crate::model::response::MyError;
-use crate::share::common::Claims;
 
 impl Handler<ProjectById> for ConnDsl {
     type Result = Result<Project, MyError>;

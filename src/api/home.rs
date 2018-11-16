@@ -1,4 +1,4 @@
-use actix_web::{fs::NamedFile, Error, HttpRequest, Result};
+use actix_web::{fs::NamedFile, HttpRequest, Result};
 use dotenv::dotenv;
 use std::env;
 use std::path::Path;
