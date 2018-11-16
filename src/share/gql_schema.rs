@@ -2,7 +2,7 @@ use actix_web::actix::Addr;
 use crate::model::db::ConnDsl;
 use crate::model::{
     project::{CreateProject, Project, ProjectById},
-    user::User,
+    user::{User, UserProjects},
 };
 use futures::Future;
 use juniper::Context;
@@ -40,8 +40,19 @@ graphql_object!(User: SchemaContext |&self| {
         &self.username
     }
 
-    field projects(&executor) -> Vec<Project> {
-        vec![]
+    field projects(&executor) -> FieldResult<Vec<Project>> {
+        match executor
+              .context()
+              .db_addr
+              .send(UserProjects{user: self.clone()})
+              .wait()
+              .unwrap() {
+            Ok(projects) => Ok(projects),
+            Err(_e) => Err(FieldError::new(
+                "Could not get Project",
+                graphql_value!({ "internal_error": ""})
+            )),
+        }
     }
 });
 

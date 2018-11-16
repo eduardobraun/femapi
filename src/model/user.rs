@@ -1,5 +1,6 @@
 use actix_web::{actix::Message, Error};
 use chrono::{NaiveDateTime, Utc};
+use crate::model::project::Project;
 use crate::model::response::MyError;
 use crate::model::response::{Msgs, SigninMsgs};
 use crate::share::schema::users;
@@ -63,6 +64,11 @@ pub struct UserById {
     pub user_id: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserProjects {
+    pub user: User,
+}
+
 impl Message for SignupUser {
     type Result = Result<Msgs, Error>;
 }
@@ -75,15 +81,12 @@ impl Message for UserById {
     type Result = Result<User, MyError>;
 }
 
-// impl Message for UserInfo {
-//     type Result = Result<UserInfoMsgs, Error>;
-// }
-
 impl Message for UserUpdate {
     type Result = Result<Msgs, Error>;
 }
-impl Message for UserDelete {
-    type Result = Result<Msgs, MyError>;
+
+impl Message for UserProjects {
+    type Result = Result<Vec<Project>, MyError>;
 }
 
 impl User {

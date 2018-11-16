@@ -6,9 +6,11 @@ use jsonwebtoken::{encode, Header};
 use uuid::Uuid;
 
 use crate::model::db::ConnDsl;
+use crate::model::member::Member;
+use crate::model::project::Project;
 use crate::model::response::MyError;
 use crate::model::response::{Msgs, SigninMsgs};
-use crate::model::user::{NewUser, SigninUser, SignupUser, User, UserById};
+use crate::model::user::{NewUser, SigninUser, SignupUser, User, UserById, UserProjects};
 use crate::share::common::Claims;
 
 impl Handler<UserById> for ConnDsl {
@@ -121,5 +123,33 @@ impl Handler<SigninUser> for ConnDsl {
                 message: "Signin failure.".to_string(),
             }),
         }
+    }
+}
+
+impl Handler<UserProjects> for ConnDsl {
+    type Result = Result<Vec<Project>, MyError>;
+
+    fn handle(&mut self, user_projects: UserProjects, _: &mut Self::Context) -> Self::Result {
+        use crate::share::schema::members::dsl as mdsl;
+        use crate::share::schema::projects::dsl as pdsl;
+
+        let conn = &self.0.get().map_err(|_| MyError::DatabaseError)?;
+
+        //TODO: use a join
+        let members = mdsl::members
+            .filter(mdsl::user_id.eq(user_projects.user.id))
+            .load::<Member>(conn)
+            .map_err(|_| MyError::DatabaseError)?;
+
+        let mut res: Vec<Project> = vec![];
+        for m in members {
+            let project = pdsl::projects
+                .find(m.project_id)
+                .first::<Project>(conn)
+                .map_err(|_| MyError::DatabaseError)?;
+            res.push(project);
+        }
+
+        Ok(res)
     }
 }
