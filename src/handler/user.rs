@@ -2,13 +2,32 @@ use actix_web::{actix::Handler, error, Error};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::Utc;
 use diesel::{self, sql_query, ExpressionMethods, QueryDsl, RunQueryDsl};
-use jsonwebtoken::{encode, Algorithm, Header};
+use jsonwebtoken::{encode, Header};
+use uuid::Uuid;
 
 use crate::model::db::ConnDsl;
 use crate::model::response::MyError;
 use crate::model::response::{Msgs, SigninMsgs};
-use crate::model::user::{NewUser, SigninUser, SignupUser, User};
+use crate::model::user::{NewUser, SigninUser, SignupUser, User, UserById};
 use crate::share::common::Claims;
+
+impl Handler<UserById> for ConnDsl {
+    type Result = Result<User, MyError>;
+
+    fn handle(&mut self, user_by_id: UserById, _: &mut Self::Context) -> Self::Result {
+        match Uuid::parse_str(&user_by_id.user_id) {
+            Ok(id) => {
+                use crate::share::schema::users::dsl;
+                let conn = &self.0.get().map_err(|_| MyError::DatabaseError)?;
+                Ok(dsl::users
+                    .find(id)
+                    .first::<User>(conn)
+                    .map_err(|_| MyError::NotFound)?)
+            }
+            Err(_e) => Err(MyError::NotFound),
+        }
+    }
+}
 
 impl Handler<SignupUser> for ConnDsl {
     type Result = Result<Msgs, Error>;
@@ -21,6 +40,7 @@ impl Handler<SignupUser> for ConnDsl {
                 Err(_) => panic!(),
             };
             let new_user = NewUser {
+                id: Uuid::new_v4(),
                 email: &signup_user.email,
                 username: &signup_user.username,
                 password: &hash_password,
@@ -59,10 +79,14 @@ impl Handler<SigninUser> for ConnDsl {
         match login_user {
             Some(login_user) => {
                 match verify(&signin_user.password, &login_user.password) {
-                    Ok(valid) => {
+                    Ok(_valid) => {
                         let key = "secret";
+                        let now = Utc::now().naive_utc().timestamp();
+                        let until = now + 10800;
                         let claims = Claims {
                             user_id: login_user.id.to_string(),
+                            iat: now,
+                            exp: until,
                         };
                         let token = match encode(&Header::default(), &claims, key.as_ref()) {
                             Ok(t) => t,

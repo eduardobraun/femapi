@@ -1,9 +1,8 @@
-use actix_web::{actix::Message, Error};
+use actix_web::actix::Message;
 use chrono::{NaiveDateTime, Utc};
 use crate::model::response::MyError;
-use crate::model::response::{Msgs, ProjectInfoMsgs, SigninMsgs};
 use crate::share::schema::projects;
-use diesel::{Associations, Identifiable, Insertable, Queryable};
+use diesel::{Identifiable, Insertable, Queryable};
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -24,12 +23,22 @@ pub struct NewProject<'a> {
     pub created_at: NaiveDateTime,
 }
 
-// impl Message for CreateProject {
-//     type Result = Result<ProjectInfoMsgs, Error>;
-// }
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CreateProject {
+    pub name: String,
+}
 
-impl Message for Project {
-    type Result = Result<ProjectInfoMsgs, Error>;
+impl Message for CreateProject {
+    type Result = Result<Project, MyError>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProjectById {
+    pub project_id: String,
+}
+
+impl Message for ProjectById {
+    type Result = Result<Project, MyError>;
 }
 
 impl Project {

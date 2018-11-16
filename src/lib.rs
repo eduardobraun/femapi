@@ -1,3 +1,4 @@
+#![allow(proc_macro_derive_resolution_fallback)]
 #![feature(custom_attribute)]
 #![feature(plugin)]
 
@@ -32,6 +33,7 @@ use actix_web::{actix::System, server};
 
 mod api;
 mod handler;
+mod middleware;
 mod model;
 mod router;
 mod share;

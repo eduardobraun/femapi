@@ -1,6 +1,4 @@
-use actix_web::{
-    AsyncResponder, FutureResponse, HttpMessage, HttpRequest, HttpResponse, Json, State,
-};
+use actix_web::{AsyncResponder, FutureResponse, HttpResponse, Json, State};
 use futures::Future;
 
 use super::super::model::user::{SigninUser, SignupUser};

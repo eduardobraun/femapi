@@ -15,14 +15,18 @@ use crate::api::{
     home::{index, path, static_dir},
 };
 
+use crate::middleware::authenticator::Authenticator;
+
 pub fn app_state() -> App<AppState> {
     let db_addr = db::init();
     let graphql_addr = graphql::init(db_addr.clone());
     App::with_state(AppState {
         db: db_addr.clone(),
         gql_executor: graphql_addr,
+        claims: None,
     })
     .middleware(middleware::Logger::default())
+    .middleware(Authenticator {})
     .prefix("/api")
     .configure(|app| {
         Cors::for_app(app)

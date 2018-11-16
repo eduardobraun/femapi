@@ -12,6 +12,13 @@ pub struct Msgs {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+pub struct UserMsgs {
+    pub status: i32,
+    pub message: String,
+    pub user: User,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct SigninMsgs {
     pub status: i32,
     pub token: String,

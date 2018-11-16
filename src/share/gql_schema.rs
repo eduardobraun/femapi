@@ -1,11 +1,17 @@
-use crate::model::{project::Project, user::User};
+use actix_web::actix::Addr;
+use crate::model::db::ConnDsl;
+use crate::model::{
+    project::{CreateProject, Project, ProjectById},
+    user::User,
+};
+use futures::Future;
 use juniper::Context;
-use juniper::FieldResult;
 use juniper::RootNode;
-use uuid::Uuid;
+use juniper::{FieldError, FieldResult};
 
 pub struct SchemaContext {
     pub current_user: Option<User>,
+    pub db_addr: Addr<ConnDsl>,
 }
 
 impl Context for SchemaContext {}
@@ -63,10 +69,16 @@ pub struct QueryRoot();
 graphql_object!(QueryRoot: SchemaContext as "Query" |&self| {
     description: "The root query object of the schema"
 
-    field current_user(&executor) -> Option<User>
+    field current_user(&executor) -> FieldResult<User>
         as ""
     {
-        executor.context().current_user.clone()
+        match executor.context().current_user.clone() {
+            Some(user) => Ok(user),
+            None => Err(FieldError::new(
+                "Not authenticated",
+                graphql_value!({ "internal_error": "Could not parse the current user from the authentication token" })
+            )),
+        }
     }
 
     field users(&executor) -> Vec<User>
@@ -81,10 +93,21 @@ graphql_object!(QueryRoot: SchemaContext as "Query" |&self| {
         vec![]
     }
 
-    field project(&executor, id: String) -> Project
+    field project(&executor, id: String) -> FieldResult<Project>
         as ""
     {
-        Project::new()
+        match executor
+              .context()
+              .db_addr
+              .send(ProjectById{project_id: id})
+              .wait()
+              .unwrap() {
+            Ok(project) => Ok(project),
+            Err(_e) => Err(FieldError::new(
+                "Could not get Project",
+                graphql_value!({ "internal_error": ""})
+            )),
+        }
     }
 });
 
@@ -92,10 +115,21 @@ pub struct MutationRoot;
 graphql_object!(MutationRoot: SchemaContext as "Mutation" |&self| {
     description: "The root mutation object of the schema"
 
-    field new_project(&executor, name: String) -> Option<Project>
+    field new_project(&executor, name: String) -> FieldResult<Project>
         as "Creates a new project"
     {
-        None
+        match executor
+              .context()
+              .db_addr
+              .send(CreateProject{name: name})
+              .wait()
+              .unwrap() {
+            Ok(project) => Ok(project),
+            Err(_e) => Err(FieldError::new(
+                "Could not create Project",
+                graphql_value!({ "internal_error": ""})
+            )),
+        }
     }
 
     field delete_project(&executor, pid: String) -> bool as "Deletes a project" {

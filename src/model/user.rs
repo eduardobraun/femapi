@@ -3,7 +3,7 @@ use chrono::{NaiveDateTime, Utc};
 use crate::model::response::MyError;
 use crate::model::response::{Msgs, SigninMsgs};
 use crate::share::schema::users;
-use diesel::{Associations, Identifiable, Insertable, Queryable};
+use diesel::{Identifiable, Insertable, Queryable};
 use serde_derive::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -19,6 +19,7 @@ pub struct User {
 #[derive(Debug, Serialize, Deserialize, Insertable)]
 #[table_name = "users"]
 pub struct NewUser<'a> {
+    pub id: Uuid,
     pub email: &'a str,
     pub username: &'a str,
     pub password: &'a str,
@@ -57,12 +58,21 @@ pub struct UserDelete {
     pub user_id: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserById {
+    pub user_id: String,
+}
+
 impl Message for SignupUser {
     type Result = Result<Msgs, Error>;
 }
 
 impl Message for SigninUser {
     type Result = Result<SigninMsgs, Error>;
+}
+
+impl Message for UserById {
+    type Result = Result<User, MyError>;
 }
 
 // impl Message for UserInfo {
