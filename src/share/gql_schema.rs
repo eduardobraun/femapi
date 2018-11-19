@@ -1,4 +1,5 @@
 use actix_web::actix::Addr;
+use crate::filestore::{FileNode, FileStore};
 use crate::model::db::ConnDsl;
 use crate::model::{
     member::Member,
@@ -76,9 +77,36 @@ graphql_object!(Project: SchemaContext |&self| {
         }
     }
 
-    // field files(&executor) -> Vec<FileNode> as "Project files" {
-    //     vec![]
-    // }
+    field files(&executor) -> Vec<FileNode> as "Project files" {
+        FileStore::dir(&FileStore::project_root(self.id))
+    }
+});
+
+graphql_object!(FileNode: SchemaContext |&self| {
+    description: ""
+
+    field name() -> String as "File name" {
+        self.name.clone()
+    }
+
+    field path() -> String as "File path" {
+        self.path.clone()
+    }
+
+    field extension() -> Option<String> as "File extension" {
+        self.extension.clone()
+    }
+
+    field children() -> Vec<FileNode> as "File extension" {
+        match self.children.clone() {
+            Some(c) => c,
+            None => vec![],
+        }
+    }
+
+    field isDir() -> bool as "Is a directory?" {
+        self.is_dir
+    }
 });
 
 #[derive(GraphQLEnum, Copy, Clone, Eq, PartialEq, Debug)]
@@ -195,7 +223,28 @@ graphql_object!(MutationRoot: SchemaContext as "Mutation" |&self| {
                 .send(CreateProject{name: name, user: current_user})
                 .wait()
                 .unwrap() {
-                Ok(project) => Ok(project),
+                Ok(project) => {
+                    let project_root = FileStore::project_root(project.id);
+                    match FileStore::create_all(&project_root) {
+                        Ok(_) => (),
+                        Err(_) => return Err(FieldError::new(
+                                "Could not create Project dir",
+                                graphql_value!({ "internal_error": ""})
+                                )),
+
+                    };
+                    // TODO: select template
+                    let template_root = FileStore::template_root(&"default");
+                    match FileStore::copy_recursive(&template_root, &project_root) {
+                        Ok(_) => (),
+                        Err(_) => return Err(FieldError::new(
+                                "Could not copy template files",
+                                graphql_value!({ "internal_error": ""})
+                                )),
+
+                    };
+                    Ok(project)
+                },
                 Err(_e) => Err(FieldError::new(
                     "Could not create Project",
                     graphql_value!({ "internal_error": ""})

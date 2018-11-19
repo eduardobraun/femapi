@@ -5,6 +5,7 @@ use diesel::{self, ExpressionMethods, QueryDsl, RunQueryDsl};
 use jsonwebtoken::{encode, Header};
 use uuid::Uuid;
 
+use crate::middleware::authenticator::secret;
 use crate::model::db::ConnDsl;
 use crate::model::member::Member;
 use crate::model::project::Project;
@@ -82,7 +83,7 @@ impl Handler<SigninUser> for ConnDsl {
             Some(login_user) => {
                 match verify(&signin_user.password, &login_user.password) {
                     Ok(_valid) => {
-                        let key = "secret";
+                        let key = secret();
                         let now = Utc::now().naive_utc().timestamp();
                         let until = now + 10800;
                         let claims = Claims {
@@ -90,7 +91,8 @@ impl Handler<SigninUser> for ConnDsl {
                             iat: now,
                             exp: until,
                         };
-                        let token = match encode(&Header::default(), &claims, key.as_ref()) {
+                        let token = match encode(&Header::default(), &claims, key.as_str().as_ref())
+                        {
                             Ok(t) => t,
                             Err(_) => panic!(), // in practice you would return the error
                         };

@@ -31,6 +31,7 @@ extern crate walkdir;
 use actix_web::{actix::System, server};
 
 mod api;
+mod filestore;
 mod handler;
 mod middleware;
 mod model;
