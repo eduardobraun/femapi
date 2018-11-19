@@ -206,49 +206,60 @@ graphql_object!(QueryRoot: SchemaContext as "Query" |&self| {
             )),
         }
     }
+
+    field templates() -> FieldResult<Vec<String>>
+        as ""
+    {
+        Ok(vec!["default".to_string(), "shortestpath".to_string()])
+    }
 });
 
 pub struct MutationRoot;
 graphql_object!(MutationRoot: SchemaContext as "Mutation" |&self| {
     description: "The root mutation object of the schema"
 
-    field new_project(&executor, name: String) -> FieldResult<Project>
-        as "Creates a new project"
+    field new_project(&executor, name: String, template: String) -> FieldResult<Project>
+        as "Create a new project"
     {
+        let templates: Vec<String> = vec!["default".to_string(), "shortestpath".to_string()];
         match executor.context().current_user.clone() {
-            Some(current_user) =>
-            match executor
-                .context()
-                .db_addr
-                .send(CreateProject{name: name, user: current_user})
-                .wait()
-                .unwrap() {
-                Ok(project) => {
-                    let project_root = FileStore::project_root(project.id);
-                    match FileStore::create_all(&project_root) {
-                        Ok(_) => (),
-                        Err(_) => return Err(FieldError::new(
-                                "Could not create Project dir",
-                                graphql_value!({ "internal_error": ""})
-                                )),
+            Some(current_user) => {
+                if !templates.contains(&template) {
+                    return Err(FieldError::new("", graphql_value!({"internal_error": ""})));
+                }
+                match executor
+                    .context()
+                    .db_addr
+                    .send(CreateProject{name: name, user: current_user})
+                    .wait()
+                    .unwrap() {
+                    Ok(project) => {
+                        let project_root = FileStore::project_root(project.id);
+                        match FileStore::create_all(&project_root) {
+                            Ok(_) => (),
+                            Err(_) => return Err(FieldError::new(
+                                    "Could not create Project dir",
+                                    graphql_value!({ "internal_error": ""})
+                                    )),
 
-                    };
-                    // TODO: select template
-                    let template_root = FileStore::template_root(&"default");
-                    match FileStore::copy_recursive(&template_root, &project_root) {
-                        Ok(_) => (),
-                        Err(_) => return Err(FieldError::new(
-                                "Could not copy template files",
-                                graphql_value!({ "internal_error": ""})
-                                )),
+                        };
+                        // TODO: select template
+                        let template_root = FileStore::template_root(&template);
+                        match FileStore::copy_recursive(&template_root, &project_root) {
+                            Ok(_) => (),
+                            Err(_) => return Err(FieldError::new(
+                                    "Could not copy template files",
+                                    graphql_value!({ "internal_error": ""})
+                                    )),
 
-                    };
-                    Ok(project)
-                },
+                        };
+                        Ok(project)
+                    },
                 Err(_e) => Err(FieldError::new(
                     "Could not create Project",
                     graphql_value!({ "internal_error": ""})
                 )),
+                }
             },
             None => Err(FieldError::new("Invalid credentials", graphql_value!({"internal_error": ""})))
         }
