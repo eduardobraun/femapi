@@ -1,8 +1,9 @@
 use actix_web::actix::Addr;
 use crate::model::db::ConnDsl;
 use crate::model::{
-    project::{CreateProject, Project, ProjectById},
-    user::{User, UserProjects},
+    member::Member,
+    project::{CreateProject, Project, ProjectById, ProjectMembers},
+    user::{User, UserById, UserProjects},
 };
 use futures::Future;
 use juniper::Context;
@@ -20,13 +21,6 @@ pub type Schema = RootNode<'static, QueryRoot, MutationRoot>;
 
 pub fn create_schema() -> Schema {
     Schema::new(QueryRoot {}, MutationRoot {})
-}
-
-#[derive(GraphQLEnum, Copy, Clone, Eq, PartialEq, Debug)]
-pub enum Permission {
-    Read,
-    Write,
-    Owner,
 }
 
 graphql_object!(User: SchemaContext |&self| {
@@ -67,13 +61,77 @@ graphql_object!(Project: SchemaContext |&self| {
         &self.name
     }
 
-    // field members(&executor) -> Vec<Member> as "Project members" {
-    //     vec![]
-    // }
+    field members(&executor) -> FieldResult<Vec<Member>> as "Project members" {
+        match executor
+              .context()
+              .db_addr
+              .send(ProjectMembers{project: self.clone()})
+              .wait()
+              .unwrap() {
+            Ok(members) => Ok(members),
+            Err(_e) => Err(FieldError::new(
+                "Could not get members for project",
+                graphql_value!({ "internal_error": ""})
+            )),
+        }
+    }
 
     // field files(&executor) -> Vec<FileNode> as "Project files" {
     //     vec![]
     // }
+});
+
+#[derive(GraphQLEnum, Copy, Clone, Eq, PartialEq, Debug)]
+pub enum Permission {
+    Read,
+    Write,
+    Owner,
+}
+
+graphql_object!(Member: SchemaContext |&self| {
+    description: "A Member"
+
+    field user(&executor) -> FieldResult<User> as "The user" {
+        match executor
+              .context()
+              .db_addr
+              .send(UserById{user_id: self.user_id.to_string()})
+              .wait()
+              .unwrap() {
+            Ok(project) => Ok(project),
+            Err(_e) => Err(FieldError::new(
+                "Could not get User",
+                graphql_value!({ "internal_error": ""})
+            )),
+        }
+    }
+
+    field project(&executor) -> FieldResult<Project> as "The project" {
+        match executor
+              .context()
+              .db_addr
+              .send(ProjectById{project_id: self.project_id.to_string()})
+              .wait()
+              .unwrap() {
+            Ok(project) => Ok(project),
+            Err(_e) => Err(FieldError::new(
+                "Could not get Project",
+                graphql_value!({ "internal_error": ""})
+            )),
+        }
+    }
+
+    field permission() -> Option<Permission> as "The project name" {
+        if self.permission == "READ" {
+            Some(Permission::Read)
+        } else if self.permission == "WRITE" {
+            Some(Permission::Write)
+        } else if self.permission == "OWNER" {
+            Some(Permission::Owner)
+        } else {
+            None
+        }
+    }
 });
 
 pub struct QueryRoot();

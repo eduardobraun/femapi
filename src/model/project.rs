@@ -1,5 +1,6 @@
 use actix_web::actix::Message;
 use chrono::{NaiveDateTime, Utc};
+use crate::model::member::Member;
 use crate::model::response::MyError;
 use crate::model::user::User;
 use crate::share::schema::projects;
@@ -41,6 +42,15 @@ pub struct ProjectById {
 
 impl Message for ProjectById {
     type Result = Result<Project, MyError>;
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProjectMembers {
+    pub project: Project,
+}
+
+impl Message for ProjectMembers {
+    type Result = Result<Vec<Member>, MyError>;
 }
 
 impl Project {

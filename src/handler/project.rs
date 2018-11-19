@@ -1,3 +1,4 @@
+use self::diesel::prelude::*;
 use actix_web::actix::Handler;
 use chrono::Utc;
 use diesel::{self, QueryDsl, RunQueryDsl};
@@ -7,7 +8,7 @@ use crate::model::db::ConnDsl;
 use crate::model::response::MyError;
 use crate::model::{
     member::Member,
-    project::{CreateProject, NewProject, Project, ProjectById},
+    project::{CreateProject, NewProject, Project, ProjectById, ProjectMembers},
 };
 
 impl Handler<ProjectById> for ConnDsl {
@@ -59,5 +60,18 @@ impl Handler<CreateProject> for ConnDsl {
             .map_err(|_e| MyError::DatabaseError)?;
 
         Ok(project)
+    }
+}
+
+impl Handler<ProjectMembers> for ConnDsl {
+    type Result = Result<Vec<Member>, MyError>;
+
+    fn handle(&mut self, project_members: ProjectMembers, _: &mut Self::Context) -> Self::Result {
+        use crate::share::schema::members::dsl;
+        let conn = &self.0.get().map_err(|_| MyError::DatabaseError)?;
+        Ok(dsl::members
+            .filter(dsl::project_id.eq(project_members.project.id))
+            .load::<Member>(conn)
+            .map_err(|_| MyError::NotFound)?)
     }
 }
