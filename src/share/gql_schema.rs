@@ -10,6 +10,8 @@ use futures::Future;
 use juniper::Context;
 use juniper::RootNode;
 use juniper::{FieldError, FieldResult};
+use std::path::Path;
+use uuid::Uuid;
 
 pub struct SchemaContext {
     pub current_user: Option<User>,
@@ -202,6 +204,19 @@ graphql_object!(QueryRoot: SchemaContext as "Query" |&self| {
             Ok(project) => Ok(project),
             Err(_e) => Err(FieldError::new(
                 "Could not get Project",
+                graphql_value!({ "internal_error": ""})
+            )),
+        }
+    }
+
+    field readFile(&executor, id: String, path: String) -> FieldResult<String>
+        as ""
+    {
+        let file = FileStore::project_root(Uuid::parse_str(&id).unwrap()).join(Path::new(&path));
+        match FileStore::read(&file) {
+            Ok(contents) => Ok(contents),
+            Err(_e) => Err(FieldError::new(
+                "Could not read file",
                 graphql_value!({ "internal_error": ""})
             )),
         }

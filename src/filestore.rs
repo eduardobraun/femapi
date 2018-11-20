@@ -3,6 +3,9 @@ use grounded_path::GroundedPath;
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
 use std::path::Path;
 use uuid::Uuid;
 use walkdir::{DirEntry, WalkDir};
@@ -120,6 +123,17 @@ impl FileStore {
             Ok(_) => Ok(()),
             Err(_) => Err(()),
         }
+    }
+
+    pub fn read(path: &GroundedPath) -> Result<String, ()> {
+        let file = match File::open(path.system_path()) {
+            Ok(f) => f,
+            Err(_) => return Err(()),
+        };
+        let mut buf_reader = BufReader::new(file);
+        let mut contents = String::new();
+        buf_reader.read_to_string(&mut contents).map_err(|_| ())?;
+        Ok(contents)
     }
 
     pub fn copy_recursive(from: &GroundedPath, to: &GroundedPath) -> Result<(), ()> {
