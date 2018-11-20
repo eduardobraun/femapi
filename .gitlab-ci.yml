@@ -93,7 +93,6 @@ deploy_staging:
       --name femapi --rm -d -p 80:4000 \
       -v /home/$STAGING_USER/femapi/config/env:/.env \
       -v /home/$STAGING_USER/femapi/data/projects:/projects \
-      -v /home/$STAGING_USER/femapi/config/Rocket.toml:/Rocket.toml \
       -v /home/$STAGING_USER/femapi/config/diesel.toml:/diesel.toml \
       --link "$STAGING_PG_HOST":"STAGING_PG_HOST" \
       "$CI_REGISTRY_IMAGE"
