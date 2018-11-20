@@ -46,7 +46,7 @@ pub fn init_server() {
     let sys = System::new("wapp");
 
     server::new(move || vec![router::app_state().boxed(), router::app().boxed()])
-        .bind("localhost:4000")
+        .bind("0.0.0.0:4000")
         .unwrap()
         .shutdown_timeout(2)
         .workers(2)
