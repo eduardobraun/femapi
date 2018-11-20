@@ -81,7 +81,6 @@ deploy_staging:
     - echo "PROJECTS_DIR=/projects" >> ~/femapi/config/env
     - echo "TEMPLATES_DIR=/templates" >> ~/femapi/config/env
     - echo "SECRET=$secret" >> ~/femapi/config/env
-    - cp ./Rocket.toml ~/femapi/config
     - cp ./diesel.toml ~/femapi/config
 
     - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$STAGING_USER"@"$STAGING_ADDR" sudo rm -rf /home/$STAGING_USER/femapi
