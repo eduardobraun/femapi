@@ -3,6 +3,9 @@ use grounded_path::GroundedPath;
 use std::env;
 use std::ffi::OsStr;
 use std::fs;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
 use std::path::Path;
 use uuid::Uuid;
 use walkdir::{DirEntry, WalkDir};
@@ -115,11 +118,25 @@ impl FileStore {
             .collect::<Vec<FileNode>>()
     }
 
-    pub fn create_all(path: &GroundedPath) {
-        std::fs::create_dir_all(path.system_path()).unwrap();
+    pub fn create_all(path: &GroundedPath) -> Result<(), ()> {
+        match std::fs::create_dir_all(path.system_path()) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(()),
+        }
     }
 
-    pub fn copy_recursive(from: &GroundedPath, to: &GroundedPath) {
+    pub fn read(path: &GroundedPath) -> Result<String, ()> {
+        let file = match File::open(path.system_path()) {
+            Ok(f) => f,
+            Err(_) => return Err(()),
+        };
+        let mut buf_reader = BufReader::new(file);
+        let mut contents = String::new();
+        buf_reader.read_to_string(&mut contents).map_err(|_| ())?;
+        Ok(contents)
+    }
+
+    pub fn copy_recursive(from: &GroundedPath, to: &GroundedPath) -> Result<(), ()> {
         for file in WalkDir::new(&from.system_path())
             .min_depth(1)
             .max_depth(1)
@@ -127,13 +144,15 @@ impl FileStore {
             .filter_entry(|e| is_file(e))
         {
             let file = file.unwrap();
-            fs::copy(
+            match fs::copy(
                 file.path(),
                 to.clone()
                     .join(Path::new(file.file_name().to_str().unwrap()))
                     .system_path(),
-            )
-            .unwrap();
+            ) {
+                Ok(_) => (),
+                Err(_) => return Err(()),
+            };
         }
         for dir in WalkDir::new(&from.system_path())
             .min_depth(1)
@@ -145,13 +164,20 @@ impl FileStore {
             let to_dir = to
                 .clone()
                 .join(Path::new(dir.file_name().to_str().unwrap()));
-            Self::create_all(&to_dir);
-            Self::copy_recursive(
+            match Self::create_all(&to_dir) {
+                Ok(_) => (),
+                Err(_) => return Err(()),
+            };
+            match Self::copy_recursive(
                 &from
                     .clone()
                     .join(Path::new(dir.file_name().to_str().unwrap())),
                 &to_dir,
-            );
+            ) {
+                Ok(_) => (),
+                Err(_) => return Err(()),
+            };
         }
+        Ok(())
     }
 }
