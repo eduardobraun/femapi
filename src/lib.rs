@@ -4,6 +4,7 @@
 
 #[macro_use]
 extern crate diesel;
+#[macro_use]
 extern crate diesel_migrations;
 extern crate serde;
 #[macro_use]
