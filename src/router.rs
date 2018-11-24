@@ -4,6 +4,7 @@ use actix_web::{
     middleware::{self, cors::Cors},
     App,
 };
+use slog::Logger;
 
 use crate::model::db;
 use crate::model::graphql;
@@ -16,16 +17,18 @@ use crate::api::{
 };
 
 use crate::middleware::authenticator::Authenticator;
+use crate::middleware::request_logger::RequestLogger;
 
-pub fn app_state() -> App<AppState> {
-    let db_addr = db::init();
+pub fn app_state(logger: Logger) -> App<AppState> {
+    let db_addr = db::init(logger.clone());
     let graphql_addr = graphql::init(db_addr.clone());
     App::with_state(AppState {
+        logger: logger,
         db: db_addr.clone(),
         gql_executor: graphql_addr,
         claims: None,
     })
-    .middleware(middleware::Logger::default())
+    .middleware(RequestLogger {})
     .middleware(Authenticator {})
     .prefix("/api")
     .configure(|app| {

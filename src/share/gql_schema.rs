@@ -1,6 +1,6 @@
 use actix_web::actix::Addr;
 use crate::filestore::{FileNode, FileStore};
-use crate::model::db::ConnDsl;
+use crate::model::db::Database;
 use crate::model::{
     member::Member,
     project::{CreateProject, Project, ProjectById, ProjectMembers},
@@ -15,7 +15,7 @@ use uuid::Uuid;
 
 pub struct SchemaContext {
     pub current_user: Option<User>,
-    pub db_addr: Addr<ConnDsl>,
+    pub db_addr: Addr<Database>,
 }
 
 impl Context for SchemaContext {}

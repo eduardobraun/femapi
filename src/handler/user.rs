@@ -6,7 +6,7 @@ use jsonwebtoken::{encode, Header};
 use uuid::Uuid;
 
 use crate::middleware::authenticator::secret;
-use crate::model::db::ConnDsl;
+use crate::model::db::Database;
 use crate::model::member::Member;
 use crate::model::project::Project;
 use crate::model::response::MyError;
@@ -14,14 +14,14 @@ use crate::model::response::{Msgs, SigninMsgs};
 use crate::model::user::{NewUser, SigninUser, SignupUser, User, UserById, UserProjects};
 use crate::share::common::Claims;
 
-impl Handler<UserById> for ConnDsl {
+impl Handler<UserById> for Database {
     type Result = Result<User, MyError>;
 
     fn handle(&mut self, user_by_id: UserById, _: &mut Self::Context) -> Self::Result {
         match Uuid::parse_str(&user_by_id.user_id) {
             Ok(id) => {
                 use crate::share::schema::users::dsl;
-                let conn = &self.0.get().map_err(|_| MyError::DatabaseError)?;
+                let conn = &self.connection.get().map_err(|_| MyError::DatabaseError)?;
                 Ok(dsl::users
                     .find(id)
                     .first::<User>(conn)
@@ -32,7 +32,7 @@ impl Handler<UserById> for ConnDsl {
     }
 }
 
-impl Handler<SignupUser> for ConnDsl {
+impl Handler<SignupUser> for Database {
     type Result = Result<Msgs, Error>;
 
     fn handle(&mut self, signup_user: SignupUser, _: &mut Self::Context) -> Self::Result {
@@ -49,7 +49,10 @@ impl Handler<SignupUser> for ConnDsl {
                 password: &hash_password,
                 created_at: Utc::now().naive_utc(),
             };
-            let conn = &self.0.get().map_err(error::ErrorInternalServerError)?;
+            let conn = &self
+                .connection
+                .get()
+                .map_err(error::ErrorInternalServerError)?;
             diesel::insert_into(users)
                 .values(&new_user)
                 .execute(conn)
@@ -67,12 +70,15 @@ impl Handler<SignupUser> for ConnDsl {
     }
 }
 
-impl Handler<SigninUser> for ConnDsl {
+impl Handler<SigninUser> for Database {
     type Result = Result<SigninMsgs, Error>;
 
     fn handle(&mut self, signin_user: SigninUser, _: &mut Self::Context) -> Self::Result {
         use crate::share::schema::users::dsl::*;
-        let conn = &self.0.get().map_err(error::ErrorInternalServerError)?;
+        let conn = &self
+            .connection
+            .get()
+            .map_err(error::ErrorInternalServerError)?;
         let login_user = users
             .filter(&username.eq(&signin_user.username))
             .load::<User>(conn)
@@ -128,14 +134,14 @@ impl Handler<SigninUser> for ConnDsl {
     }
 }
 
-impl Handler<UserProjects> for ConnDsl {
+impl Handler<UserProjects> for Database {
     type Result = Result<Vec<Project>, MyError>;
 
     fn handle(&mut self, user_projects: UserProjects, _: &mut Self::Context) -> Self::Result {
         use crate::share::schema::members::dsl as mdsl;
         use crate::share::schema::projects::dsl as pdsl;
 
-        let conn = &self.0.get().map_err(|_| MyError::DatabaseError)?;
+        let conn = &self.connection.get().map_err(|_| MyError::DatabaseError)?;
 
         //TODO: use a join
         let members = mdsl::members

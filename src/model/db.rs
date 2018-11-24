@@ -2,18 +2,26 @@ use actix_web::actix::{Actor, Addr, SyncArbiter, SyncContext};
 use diesel::prelude::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use dotenv;
+use slog::Logger;
 
-pub struct ConnDsl(pub Pool<ConnectionManager<PgConnection>>);
+// pub struct ConnDsl(pub Pool<ConnectionManager<PgConnection>>);
+pub struct Database {
+    pub log: Logger,
+    pub connection: Pool<ConnectionManager<PgConnection>>,
+}
 
-impl Actor for ConnDsl {
+impl Actor for Database {
     type Context = SyncContext<Self>;
 }
 
-pub fn init() -> Addr<ConnDsl> {
+pub fn init(logger: Logger) -> Addr<Database> {
     let db_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let manager = ConnectionManager::<PgConnection>::new(db_url);
     let conn = Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
-    SyncArbiter::start(4, move || ConnDsl(conn.clone()))
+    SyncArbiter::start(4, move || Database {
+        log: logger.clone(),
+        connection: conn.clone(),
+    })
 }

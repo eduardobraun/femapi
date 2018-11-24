@@ -3,7 +3,7 @@ use actix_web::{actix::Handler, actix::Message, Error};
 use futures::Future;
 use juniper::http::GraphQLRequest;
 
-use crate::model::db::ConnDsl;
+use crate::model::db::Database;
 use crate::model::user::UserById;
 use crate::share::common::Claims;
 use crate::share::gql_schema::{create_schema, Schema, SchemaContext};
@@ -23,11 +23,11 @@ impl Message for GraphQLData {
 
 pub struct GraphQLExecutor {
     schema: std::sync::Arc<Schema>,
-    db_addr: Addr<ConnDsl>,
+    db_addr: Addr<Database>,
 }
 
 impl GraphQLExecutor {
-    fn new(schema: std::sync::Arc<Schema>, db_addr: Addr<ConnDsl>) -> GraphQLExecutor {
+    fn new(schema: std::sync::Arc<Schema>, db_addr: Addr<Database>) -> GraphQLExecutor {
         GraphQLExecutor {
             schema: schema,
             db_addr: db_addr,
@@ -67,7 +67,7 @@ impl Handler<GraphQLData> for GraphQLExecutor {
     }
 }
 
-pub fn init(db_addr: Addr<ConnDsl>) -> Addr<GraphQLExecutor> {
+pub fn init(db_addr: Addr<Database>) -> Addr<GraphQLExecutor> {
     let schema = std::sync::Arc::new(create_schema());
     SyncArbiter::start(4, move || {
         GraphQLExecutor::new(schema.clone(), db_addr.clone())

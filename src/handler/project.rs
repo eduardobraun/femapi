@@ -4,21 +4,21 @@ use chrono::Utc;
 use diesel::{self, QueryDsl, RunQueryDsl};
 use uuid::Uuid;
 
-use crate::model::db::ConnDsl;
+use crate::model::db::Database;
 use crate::model::response::MyError;
 use crate::model::{
     member::Member,
     project::{CreateProject, NewProject, Project, ProjectById, ProjectMembers},
 };
 
-impl Handler<ProjectById> for ConnDsl {
+impl Handler<ProjectById> for Database {
     type Result = Result<Project, MyError>;
 
     fn handle(&mut self, project_by_id: ProjectById, _: &mut Self::Context) -> Self::Result {
         match Uuid::parse_str(&project_by_id.project_id) {
             Ok(id) => {
                 use crate::share::schema::projects::dsl;
-                let conn = &self.0.get().map_err(|_| MyError::DatabaseError)?;
+                let conn = &self.connection.get().map_err(|_| MyError::DatabaseError)?;
                 Ok(dsl::projects
                     .find(id)
                     .first::<Project>(conn)
@@ -29,13 +29,13 @@ impl Handler<ProjectById> for ConnDsl {
     }
 }
 
-impl Handler<CreateProject> for ConnDsl {
+impl Handler<CreateProject> for Database {
     type Result = Result<Project, MyError>;
 
     fn handle(&mut self, create_project: CreateProject, _: &mut Self::Context) -> Self::Result {
         use crate::share::schema::members::dsl as mdsl;
         use crate::share::schema::projects::dsl;
-        let conn = &self.0.get().map_err(|_| MyError::DatabaseError)?;
+        let conn = &self.connection.get().map_err(|_| MyError::DatabaseError)?;
         let new_project = NewProject {
             id: Uuid::new_v4(),
             name: &create_project.name,
@@ -63,12 +63,12 @@ impl Handler<CreateProject> for ConnDsl {
     }
 }
 
-impl Handler<ProjectMembers> for ConnDsl {
+impl Handler<ProjectMembers> for Database {
     type Result = Result<Vec<Member>, MyError>;
 
     fn handle(&mut self, project_members: ProjectMembers, _: &mut Self::Context) -> Self::Result {
         use crate::share::schema::members::dsl;
-        let conn = &self.0.get().map_err(|_| MyError::DatabaseError)?;
+        let conn = &self.connection.get().map_err(|_| MyError::DatabaseError)?;
         Ok(dsl::members
             .filter(dsl::project_id.eq(project_members.project.id))
             .load::<Member>(conn)
