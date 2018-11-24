@@ -40,10 +40,6 @@ use slog::Drain;
 use slog::Logger;
 use slog::*;
 use slog_atomic::*;
-use std::sync::atomic::AtomicUsize;
-use std::sync::{Arc, Mutex};
-
-use std::sync::atomic::Ordering::SeqCst;
 
 mod api;
 mod filestore;

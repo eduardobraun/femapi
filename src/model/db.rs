@@ -21,10 +21,18 @@ pub fn init(logger: Logger) -> Addr<Database> {
     let pool = Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
+    let log = logger.new(o!("module" => "Database"));
+
     let conn = &pool.get().unwrap();
-    embedded_migrations::run(&*conn);
+    match embedded_migrations::run(&*conn) {
+        Ok(_) => (),
+        Err(e) => {
+            warn!(log, "migrations"; "error" => format!{"{:?}", e});
+            ()
+        }
+    };
     SyncArbiter::start(4, move || Database {
-        log: logger.clone(),
+        log: log.clone(),
         connection: pool.clone(),
     })
 }
