@@ -13,7 +13,6 @@ extern crate actix_web;
 extern crate bcrypt;
 extern crate chrono;
 extern crate dotenv;
-// extern crate env_logger;
 extern crate futures;
 extern crate http;
 extern crate jsonwebtoken;
@@ -22,7 +21,6 @@ extern crate postgres;
 extern crate serde_json;
 #[macro_use]
 extern crate juniper;
-// extern crate frank_jwt;
 extern crate grounded_path;
 extern crate r2d2;
 extern crate r2d2_diesel;
@@ -51,9 +49,8 @@ mod share;
 
 ///Initialize the webserver
 pub fn init_server() {
-    ::std::env::set_var("RUST_LOG", "wapp=info");
-    ::std::env::set_var("RUST_BACKTRACE", "1");
-    // env_logger::init();
+    // ::std::env::set_var("RUST_LOG", "wapp=debug");
+    // ::std::env::set_var("RUST_BACKTRACE", "1");
     let decorator = slog_term::TermDecorator::new().build();
     let drain = slog_term::CompactFormat::new(decorator).build().fuse();
     let drain = slog_async::Async::new(drain).build().fuse();
@@ -65,6 +62,7 @@ pub fn init_server() {
         drain.fuse(),
         o!("version" => env!("CARGO_PKG_VERSION"), "build-id" => env!("GIT_HASH")),
     );
+    let _guard = slog_envlogger::init().unwrap();
 
     let addr = "0.0.0.0:4000".to_string();
     let log = root.new(o!("address" => addr.clone()));
