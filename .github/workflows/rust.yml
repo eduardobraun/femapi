@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Deps
-      run: apt-get install -y --no-install-recommends libsqlite3-dev libpq5 libssl-dev
+      run: sudo apt-get install -y --no-install-recommends libsqlite3-dev libpq5 libssl-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests
